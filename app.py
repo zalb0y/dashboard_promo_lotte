@@ -238,7 +238,7 @@ with st.sidebar:
     st.title("Dashboard Filter")
 
     st.markdown("---")
-    portal = st.radio("🏬 Portal", ["LMI (114 Store)", "LSI (600 Store)"])
+    portal = st.radio("🏬 Portal", ["LMI", "LSI"])
 
     st.markdown("---")
     if portal == "LSI (600 Store)":
