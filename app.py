@@ -241,7 +241,7 @@ with st.sidebar:
     portal = st.radio("🏬 Portal", ["LMI", "LSI"])
 
     st.markdown("---")
-    if portal == "LSI (600 Store)":
+    if portal == "LSI":
         lsi_options = {
             "LM1 · 30 Des 2025 – 12 Jan 2026": 1,
             "LM2 · 13 Jan – 26 Jan 2026":       2,
