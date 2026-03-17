@@ -12,45 +12,247 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ─── CUSTOM CSS ─────────────────────────────────────────────────────────────
+# ─── CUSTOM CSS (DARK THEME) ────────────────────────────────────────────────
 st.markdown("""
 <style>
-    .main { background-color: #f8fafc; }
-    .block-container { padding-top: 1.5rem; }
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+    /* ── Global ── */
+    html, body, [class*="css"], .stApp {
+        font-family: 'Poppins', sans-serif !important;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+        color: #e2e8f0 !important;
+    }
+    .main, section.main { background: transparent !important; }
+    .block-container { padding-top: 1rem; max-width: 1400px; }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       HIDE ALL STREAMLIT DEFAULT UI ELEMENTS
+       Menyembunyikan semua elemen UI bawaan Streamlit termasuk header
+    ══════════════════════════════════════════════════════════════════════ */
+    
+    /* Hide header/toolbar area completely */
+    header[data-testid="stHeader"] {
+        display: none !important;
+        height: 0 !important;
+        visibility: hidden !important;
+    }
+    
+    /* Hide the top decoration bar */
+    [data-testid="stDecoration"] {
+        display: none !important;
+        height: 0 !important;
+    }
+    
+    /* Alternative header selectors */
+    .stApp > header,
+    header.stAppHeader,
+    [data-testid="stAppViewBlockContainer"] > header,
+    .stApp header {
+        display: none !important;
+        height: 0 !important;
+        background: transparent !important;
+    }
+    
+    /* Remove any top padding/margin that creates white space */
+    .stApp {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    .stApp > div:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    /* Main content area - remove top spacing */
+    [data-testid="stAppViewContainer"] {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    [data-testid="stAppViewContainer"] > div:first-child {
+        padding-top: 0 !important;
+    }
+    
+    /* Block container positioning */
+    [data-testid="stAppViewBlockContainer"],
+    .block-container {
+        padding-top: 1rem !important;
+        margin-top: 0 !important;
+    }
+    
+    /* Hide other UI elements */
+    #MainMenu { display: none !important; }
+    footer { display: none !important; }
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stStatusWidget"] { display: none !important; }
+    [data-testid="stSidebarNav"] { display: none !important; }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       SOLUSI: Sembunyikan tombol collapse sidebar & teks icon yang error
+       Sidebar akan selalu terbuka dan tidak bisa ditutup
+    ══════════════════════════════════════════════════════════════════════ */
+    
+    /* Sembunyikan tombol collapse di dalam sidebar */
+    [data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"],
+    [data-testid="stSidebarHeader"] button,
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+    button[kind="headerNoPadding"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Sembunyikan teks icon Material yang tidak ter-render */
+    span[data-testid="stIconMaterial"] {
+        font-size: 0 !important;
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
+    /* Pastikan sidebar header bersih tanpa tombol */
+    [data-testid="stSidebarHeader"] {
+        display: none !important;
+    }
+    
+    /* Sembunyikan collapsed control juga */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: none !important;
+    }
+
+    /* ── Sidebar Styling ── */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
+        border-right: 1px solid rgba(255,255,255,0.08) !important;
+        min-width: 280px !important;
+    }
+    [data-testid="stSidebar"] * { 
+        color: #e2e8f0 !important; 
+        font-family: 'Poppins', sans-serif !important; 
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1rem !important;
+    }
+
+    /* ── Metric Cards ── */
     .metric-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.2rem 1.5rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08);
-        border-left: 4px solid #3b82f6;
+        background: linear-gradient(145deg, #1e2a4a 0%, #2d3a5a 100%);
+        border-radius: 20px;
+        padding: 1.3rem 1.5rem;
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+        border-left: 4px solid #00d4ff;
+        transition: all 0.3s ease;
     }
-    .metric-card.green  { border-left-color: #22c55e; }
-    .metric-card.orange { border-left-color: #f97316; }
-    .metric-card.purple { border-left-color: #8b5cf6; }
-    .metric-card.red    { border-left-color: #ef4444; }
-    .metric-card.teal   { border-left-color: #14b8a6; }
-    .metric-value { font-size: 1.7rem; font-weight: 700; color: #1e293b; }
-    .metric-label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-    .metric-delta { font-size: 0.85rem; margin-top: 0.2rem; color: #64748b; }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0,212,255,0.2);
+        border-color: rgba(0,212,255,0.3);
+    }
+    .metric-card.green  { border-left-color: #00f5d4; box-shadow: 0 8px 32px rgba(0,245,212,0.15); }
+    .metric-card.green:hover  { box-shadow: 0 12px 40px rgba(0,245,212,0.25); }
+    .metric-card.orange { border-left-color: #fee440; box-shadow: 0 8px 32px rgba(254,228,64,0.15); }
+    .metric-card.orange:hover { box-shadow: 0 12px 40px rgba(254,228,64,0.25); }
+    .metric-card.purple { border-left-color: #9b5de5; box-shadow: 0 8px 32px rgba(155,93,229,0.15); }
+    .metric-card.purple:hover { box-shadow: 0 12px 40px rgba(155,93,229,0.25); }
+    .metric-card.red    { border-left-color: #ff6b6b; box-shadow: 0 8px 32px rgba(255,107,107,0.15); }
+    .metric-card.red:hover    { box-shadow: 0 12px 40px rgba(255,107,107,0.25); }
+    .metric-card.teal   { border-left-color: #00f5d4; box-shadow: 0 8px 32px rgba(0,245,212,0.15); }
+    .metric-card.teal:hover   { box-shadow: 0 12px 40px rgba(0,245,212,0.25); }
+
+    .metric-value {
+        font-size: 1.7rem; font-weight: 700;
+        background: linear-gradient(135deg, #00d4ff 0%, #7b2cbf 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.02em;
+    }
+    .metric-label {
+        font-size: 0.72rem; color: #a0aec0;
+        text-transform: uppercase; letter-spacing: 0.1em;
+        font-weight: 500; margin-top: 0.3rem;
+    }
+    .metric-delta { font-size: 0.82rem; margin-top: 0.25rem; color: #718096; }
+
+    /* ── Section Title ── */
     .section-title {
-        font-size: 1.1rem; font-weight: 600; color: #1e293b;
-        margin-bottom: 0.5rem; padding-bottom: 0.3rem;
-        border-bottom: 2px solid #e2e8f0;
+        font-size: 1.05rem; font-weight: 600; color: #ffffff;
+        margin-bottom: 0.7rem; padding-left: 0.6rem;
+        border-left: 4px solid #00d4ff;
+        letter-spacing: 0.01em;
     }
+
+    /* ── Insight Boxes ── */
     .insight-box {
-        background: #eff6ff; border-left: 4px solid #3b82f6;
-        border-radius: 0 8px 8px 0; padding: 0.8rem 1rem;
-        margin-bottom: 0.6rem; font-size: 0.9rem; color: #1e40af;
+        background: linear-gradient(135deg, rgba(0,212,255,0.08) 0%, rgba(123,44,191,0.08) 100%);
+        border-left: 3px solid #00d4ff;
+        border-radius: 0 12px 12px 0;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.6rem;
+        font-size: 0.88rem;
+        color: #93c5fd;
+        backdrop-filter: blur(8px);
+        border-top: 1px solid rgba(0,212,255,0.1);
     }
-    .insight-box.warning { background: #fff7ed; border-left-color: #f97316; color: #9a3412; }
-    .insight-box.success { background: #f0fdf4; border-left-color: #22c55e; color: #166534; }
+    .insight-box.warning {
+        background: linear-gradient(135deg, rgba(254,228,64,0.08) 0%, rgba(255,107,107,0.08) 100%);
+        border-left-color: #fee440;
+        border-top-color: rgba(254,228,64,0.1);
+        color: #fde68a;
+    }
+    .insight-box.success {
+        background: linear-gradient(135deg, rgba(0,245,212,0.08) 0%, rgba(0,212,255,0.08) 100%);
+        border-left-color: #00f5d4;
+        border-top-color: rgba(0,245,212,0.1);
+        color: #6ee7b7;
+    }
+
+    /* ── Portal Badge ── */
     .portal-badge {
-        display: inline-block; padding: 0.3rem 1rem;
-        border-radius: 20px; font-weight: 700; font-size: 0.85rem;
-        margin-bottom: 0.5rem;
+        display: inline-block; padding: 0.3rem 1.1rem;
+        border-radius: 20px; font-weight: 700; font-size: 0.8rem;
+        margin-bottom: 0.5rem; letter-spacing: 0.08em;
+        font-family: 'Poppins', sans-serif;
     }
-    .badge-lmi { background: #dbeafe; color: #1d4ed8; }
-    .badge-lsi { background: #f3e8ff; color: #7c3aed; }
+    .badge-lmi {
+        background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.08));
+        color: #00d4ff;
+        border: 1px solid rgba(0,212,255,0.35);
+        box-shadow: 0 0 12px rgba(0,212,255,0.15);
+    }
+    .badge-lsi {
+        background: linear-gradient(135deg, rgba(155,93,229,0.15), rgba(123,44,191,0.08));
+        color: #c084fc;
+        border: 1px solid rgba(155,93,229,0.35);
+        box-shadow: 0 0 12px rgba(155,93,229,0.15);
+    }
+
+    /* ── Headings ── */
+    h1, h2, h3 { color: #ffffff !important; font-family: 'Poppins', sans-serif !important; }
+    p, li { color: #a0aec0; }
+
+    /* ── Dataframe ── */
+    [data-testid="stDataFrame"] {
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        border-radius: 12px; overflow: hidden;
+    }
+
+    /* ── Widgets ── */
+    [data-testid="stSelectbox"] > div > div,
+    [data-testid="stMultiselect"] > div > div {
+        background-color: rgba(30,42,74,0.9) !important;
+        border-color: rgba(255,255,255,0.12) !important;
+        color: #e2e8f0 !important;
+    }
+    hr { border-color: rgba(255,255,255,0.08) !important; }
+    [data-testid="stCaption"] { color: #4a5568 !important; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1a1a2e; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00d4ff; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -76,46 +278,83 @@ def insight(text, kind="info"):
     cls = {"info":"","warning":"warning","success":"success"}.get(kind,"")
     return f'<div class="insight-box {cls}">💡 {text}</div>'
 
+# ── Plotly dark layout defaults ──
+PD = dict(
+    plot_bgcolor="#1a2035",
+    paper_bgcolor="rgba(0,0,0,0)",
+    font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
+    xaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
+    yaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
+    legend=dict(bgcolor="rgba(26,32,53,0.8)", bordercolor="#2d3748", borderwidth=1, font=dict(color="#e2e8f0")),
+    hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
+    margin=dict(t=30, b=20, l=10, r=10),
+)
+
 # ─── DATA LOADERS ────────────────────────────────────────────────────────────
+# LMI file config per periode
+LMI_FILES = {
+    1: {"path": "data/LM1_114_Jan_Nasional.xlsx",       "has_nan_col": True},
+    2: {"path": "data/LM2_1528_Jan_Nasional.xlsx",       "has_nan_col": True},
+    3: {"path": "data/LM3_29_Jan18_Feb_Nasional.xlsx",   "has_nan_col": True},
+    4: {"path": "data/LM4_19_Feb4_Mar_Nasional.xlsx",    "has_nan_col": False},
+}
 
 @st.cache_data
-def load_lmi():
-    path = "LM1_114_Jan_Nasional.xlsx"
+def load_lmi(lm_num=1):
+    cfg  = LMI_FILES[lm_num]
+    path = cfg["path"]
+    nan  = cfg["has_nan_col"]
+
     raw_store = pd.read_excel(path, sheet_name="By Store", header=None)
-    period_label = str(raw_store.iloc[1, 1])
 
-    store = raw_store.iloc[4:16].copy()
-    store.columns = range(store.shape[1])
-    store = store[[1,2,3,4,5,6,7,8,9,10]]
-    store.columns = ["Store ID","Store Name","Total NS","Normal NS","LM NS",
-                     "LM Cont%","Regular NS","Regular Cont%","Trader NS","Trader Cont%"]
-    store = store.dropna(subset=["Store ID"]).reset_index(drop=True)
-    for col in store.columns[2:]:
-        store[col] = pd.to_numeric(store[col], errors="coerce")
+    if nan:
+        period_label = str(raw_store.iloc[1, 1])
+        store_data = raw_store.iloc[4:16].copy()
+        store_data.columns = range(store_data.shape[1])
+        store_data = store_data[[1,2,3,4,5,6,7,8,9,10]]
+        total_row  = raw_store.iloc[16]
+        st_total   = {"Total NS": total_row[3], "Normal NS": total_row[4],
+                      "LM NS": total_row[5], "LM Cont%": total_row[6]}
+        cat_id_col, cat_name_col = 1, 2
+        cat_start, num_cols = 4, [3,4,5,6,7,8,9,10]
+    else:
+        period_label = str(raw_store.iloc[0, 1])
+        store_data = raw_store.iloc[3:15].copy()
+        store_data.columns = range(store_data.shape[1])
+        store_data = store_data[[0,1,2,3,4,5,6,7,8,9]]
+        total_row  = raw_store.iloc[15]
+        st_total   = {"Total NS": total_row[2], "Normal NS": total_row[3],
+                      "LM NS": total_row[4], "LM Cont%": total_row[5]}
+        cat_id_col, cat_name_col = 0, 1
+        cat_start, num_cols = 3, [2,3,4,5,6,7,8,9]
 
-    total_row = raw_store.iloc[16]
-    store_total = {"Total NS": total_row[3], "Normal NS": total_row[4],
-                   "LM NS": total_row[5], "LM Cont%": total_row[6]}
+    store_data.columns = ["Store ID","Store Name","Total NS","Normal NS","LM NS",
+                          "LM Cont%","Regular NS","Regular Cont%","Trader NS","Trader Cont%"]
+    store_data = store_data.dropna(subset=["Store ID"]).reset_index(drop=True)
+    for col in store_data.columns[2:]:
+        store_data[col] = pd.to_numeric(store_data[col], errors="coerce")
 
     raw_cat = pd.read_excel(path, sheet_name="By Cat", header=None)
     GROUP_LABELS = ["FRESH FOOD","MEAL SOLUTION","DRY FOOD","H&B HOME CARE","ELECTRONIC","NON FOOD","TOTAL"]
-    all_rows = raw_cat.iloc[4:].copy()
+    all_rows = raw_cat.iloc[cat_start:].copy()
     all_rows.columns = range(all_rows.shape[1])
 
     rows = []
     for _, r in all_rows.iterrows():
-        cat_id, cat_name = r[1], r[2]
+        cat_id   = r[cat_id_col]
+        cat_name = r[cat_name_col]
         if pd.isna(cat_id): continue
+        c = num_cols
         rows.append({
-            "Cat ID": cat_id, "Category": cat_name,
-            "Total NS": pd.to_numeric(r[3], errors="coerce"),
-            "Normal NS": pd.to_numeric(r[4], errors="coerce"),
-            "LM NS": pd.to_numeric(r[5], errors="coerce"),
-            "LM Cont%": pd.to_numeric(r[6], errors="coerce"),
-            "Regular NS": pd.to_numeric(r[7], errors="coerce"),
-            "Regular Cont%": pd.to_numeric(r[8], errors="coerce"),
-            "Trader NS": pd.to_numeric(r[9], errors="coerce"),
-            "Trader Cont%": pd.to_numeric(r[10], errors="coerce"),
+            "Cat ID":       cat_id, "Category": cat_name,
+            "Total NS":     pd.to_numeric(r[c[0]], errors="coerce"),
+            "Normal NS":    pd.to_numeric(r[c[1]], errors="coerce"),
+            "LM NS":        pd.to_numeric(r[c[2]], errors="coerce"),
+            "LM Cont%":     pd.to_numeric(r[c[3]], errors="coerce"),
+            "Regular NS":   pd.to_numeric(r[c[4]], errors="coerce"),
+            "Regular Cont%":pd.to_numeric(r[c[5]], errors="coerce"),
+            "Trader NS":    pd.to_numeric(r[c[6]], errors="coerce"),
+            "Trader Cont%": pd.to_numeric(r[c[7]], errors="coerce"),
             "Is Group": str(cat_name).strip().upper() in [g.upper() for g in GROUP_LABELS],
         })
     cat_df = pd.DataFrame(rows)
@@ -134,14 +373,12 @@ def load_lmi():
     cat_detail["Group"] = cat_detail["Cat ID"].apply(
         lambda x: id_to_group.get(int(x), "OTHER") if str(x).isdigit() else "OTHER"
     )
-    return store, store_total, cat_detail, period_label
+    return store_data, st_total, cat_detail, period_label
 
 
 @st.cache_data
 def load_lsi(lm_num):
-    path = f"LM{lm_num}_LSI_Summary.xlsb"
-
-    # ── By Store ──
+    path = f"data/LM{lm_num}_LSI_Summary.xlsb"
     raw = pd.read_excel(path, engine="pyxlsb", sheet_name="Summary by Store", header=None)
     period_label = str(raw.iloc[0, 1])
 
@@ -154,14 +391,14 @@ def load_lsi(lm_num):
     store = pd.DataFrame({
         "Store ID":        store_rows[0].values,
         "Store Name":      store_rows[1].values,
-        "Total NS":        pd.to_numeric(store_rows[2], errors="coerce").values,
-        "Normal NS":       pd.to_numeric(store_rows[3], errors="coerce").values,
-        "LM NS":           pd.to_numeric(store_rows[4], errors="coerce").values,
-        "LM Cont%":        pd.to_numeric(store_rows[5], errors="coerce").values,
-        "LM Trader NS":    pd.to_numeric(store_rows[6], errors="coerce").values,
-        "LM Trader Cont%": pd.to_numeric(store_rows[7], errors="coerce").values,
-        "LM Prof NS":      pd.to_numeric(store_rows[8], errors="coerce").values,
-        "LM Prof Cont%":   pd.to_numeric(store_rows[9], errors="coerce").values,
+        "Total NS":        pd.to_numeric(store_rows[2],  errors="coerce").values,
+        "Normal NS":       pd.to_numeric(store_rows[3],  errors="coerce").values,
+        "LM NS":           pd.to_numeric(store_rows[4],  errors="coerce").values,
+        "LM Cont%":        pd.to_numeric(store_rows[5],  errors="coerce").values,
+        "LM Trader NS":    pd.to_numeric(store_rows[6],  errors="coerce").values,
+        "LM Trader Cont%": pd.to_numeric(store_rows[7],  errors="coerce").values,
+        "LM Prof NS":      pd.to_numeric(store_rows[8],  errors="coerce").values,
+        "LM Prof Cont%":   pd.to_numeric(store_rows[9],  errors="coerce").values,
         "LM Others NS":    pd.to_numeric(store_rows[10], errors="coerce").values,
         "LM Others Cont%": pd.to_numeric(store_rows[11], errors="coerce").values,
         "SKU Total":       pd.to_numeric(store_rows[12], errors="coerce").values,
@@ -171,20 +408,18 @@ def load_lsi(lm_num):
     }).reset_index(drop=True)
 
     store_total = {
-        "Total NS":  pd.to_numeric(total_row[2], errors="coerce"),
-        "Normal NS": pd.to_numeric(total_row[3], errors="coerce"),
-        "LM NS":     pd.to_numeric(total_row[4], errors="coerce"),
-        "LM Cont%":  pd.to_numeric(total_row[5], errors="coerce"),
+        "Total NS":  pd.to_numeric(total_row[2],  errors="coerce"),
+        "Normal NS": pd.to_numeric(total_row[3],  errors="coerce"),
+        "LM NS":     pd.to_numeric(total_row[4],  errors="coerce"),
+        "LM Cont%":  pd.to_numeric(total_row[5],  errors="coerce"),
         "SKU Total": pd.to_numeric(total_row[12], errors="coerce"),
         "SKU Sale":  pd.to_numeric(total_row[13], errors="coerce"),
         "SKU Cont%": pd.to_numeric(total_row[14], errors="coerce"),
         "OOS":       pd.to_numeric(total_row[15], errors="coerce"),
     }
 
-    # ── By Cat ──
     raw_cat = pd.read_excel(path, engine="pyxlsb", sheet_name="Summary by Cat", header=None)
     GROUP_LABELS_LSI = ["DFF","DMS","DF1","DF2","DF3","DDF","ELC","NF1","NF2","NFI","OTH","ALL"]
-
     cat_rows = raw_cat.iloc[3:].copy()
     cat_rows.columns = range(cat_rows.shape[1])
 
@@ -234,8 +469,8 @@ def load_lsi(lm_num):
 
 # ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/bar-chart.png", width=55)
-    st.title("Dashboard Filter")
+    st.markdown("## 📊 Dashboard")
+    st.markdown("**Filter & Navigasi**")
 
     st.markdown("---")
     portal = st.radio("🏬 Portal", ["LMI", "LSI"])
@@ -255,7 +490,15 @@ with st.sidebar:
         store_df, store_total, cat_df, period_label = load_lsi(lm_num)
         portal_label = "LSI"
     else:
-        store_df, store_total, cat_df, period_label = load_lmi()
+        lmi_options = {
+            "LM1 · 1–14 Jan 2026":          1,
+            "LM2 · 15–28 Jan 2026":         2,
+            "LM3 · 29 Jan – 18 Feb 2026":   3,
+            "LM4 · 19 Feb – 4 Mar 2026":    4,
+        }
+        selected_lmi = st.selectbox("📅 Pilih Periode", list(lmi_options.keys()))
+        lm_num_lmi = lmi_options[selected_lmi]
+        store_df, store_total, cat_df, period_label = load_lmi(lm_num_lmi)
         portal_label = "LMI"
 
     st.markdown("---")
@@ -305,12 +548,13 @@ if page == "🏠 Overview":
             st.markdown('<div class="section-title">Komposisi LM vs Normal</div>', unsafe_allow_html=True)
             fig1 = go.Figure(go.Pie(
                 labels=["LM (Promo)","Normal"], values=[lm_ns, normal_ns],
-                hole=0.55, marker_colors=["#3b82f6","#e2e8f0"],
-                textinfo="label+percent", textfont_size=13,
+                hole=0.55, marker_colors=["#00d4ff","#2d3a5a"],
+                textinfo="label+percent", textfont=dict(size=12, color="#ffffff"),
             ))
-            fig1.update_layout(showlegend=False, margin=dict(t=10,b=10,l=10,r=10), height=260,
-                annotations=[dict(text=f"<b>{lm_cont:.1f}%</b><br>LM", x=0.5, y=0.5,
-                                  font_size=16, showarrow=False)])
+            fig1.update_layout(**{**PD, "showlegend":False, "height":280,
+                "margin":dict(t=10,b=10,l=10,r=10),
+                "annotations":[dict(text=f"<b>{lm_cont:.1f}%</b><br>LM",
+                    x=0.5, y=0.5, font=dict(size=16, color="#00d4ff"), showarrow=False)]})
             st.plotly_chart(fig1, use_container_width=True)
 
         with col_b:
@@ -319,20 +563,21 @@ if page == "🏠 Overview":
             trader_cont_pct  = trader_ns  / total_ns * 100 if total_ns else 0
             fig2 = go.Figure(go.Pie(
                 labels=["Regular (End User)","Trader"], values=[regular_ns, trader_ns],
-                hole=0.55, marker_colors=["#22c55e","#f97316"],
+                hole=0.55, marker_colors=["#00f5d4","#fee440"],
                 textinfo="none",
                 customdata=[regular_cont_pct, trader_cont_pct],
                 hovertemplate="<b>%{label}</b><br>Net Sales: %{value:,.3f}<br>Kontribusi: %{customdata:.6f}%<extra></extra>",
             ))
-            fig2.update_layout(
-                showlegend=True, legend=dict(orientation="h", y=-0.12, x=0.5, xanchor="center"),
-                margin=dict(t=10,b=50,l=10,r=10), height=290,
-                annotations=[
+            fig2.update_layout(**{**PD,
+                "showlegend":True,
+                "legend":dict(orientation="h", y=-0.12, x=0.5, xanchor="center", font=dict(color="#e2e8f0")),
+                "margin":dict(t=10,b=50,l=10,r=10), "height":300,
+                "annotations":[
                     dict(text=f"<b>{regular_cont_pct:.4f}%</b><br>Regular",
-                         x=0.5, y=0.58, font_size=14, showarrow=False),
+                         x=0.5, y=0.58, font=dict(size=14, color="#00f5d4"), showarrow=False),
                     dict(text=f"Trader: {trader_cont_pct:.6f}%",
-                         x=0.5, y=0.32, font_size=10, showarrow=False, font_color="#94a3b8"),
-                ])
+                         x=0.5, y=0.32, font=dict(size=10, color="#718096"), showarrow=False),
+                ]})
             st.plotly_chart(fig2, use_container_width=True)
 
     else:  # LSI
@@ -368,12 +613,13 @@ if page == "🏠 Overview":
             st.markdown('<div class="section-title">Komposisi LM vs Normal</div>', unsafe_allow_html=True)
             fig1 = go.Figure(go.Pie(
                 labels=["LM (Promo)","Normal"], values=[lm_ns, normal_ns],
-                hole=0.55, marker_colors=["#8b5cf6","#e2e8f0"],
-                textinfo="label+percent", textfont_size=13,
+                hole=0.55, marker_colors=["#9b5de5","#2d3a5a"],
+                textinfo="label+percent", textfont=dict(size=12, color="#ffffff"),
             ))
-            fig1.update_layout(showlegend=False, margin=dict(t=10,b=10,l=10,r=10), height=260,
-                annotations=[dict(text=f"<b>{lm_cont:.2f}%</b><br>LM", x=0.5, y=0.5,
-                                  font_size=16, showarrow=False)])
+            fig1.update_layout(**{**PD, "showlegend":False, "height":280,
+                "margin":dict(t=10,b=10,l=10,r=10),
+                "annotations":[dict(text=f"<b>{lm_cont:.2f}%</b><br>LM",
+                    x=0.5, y=0.5, font=dict(size=16, color="#9b5de5"), showarrow=False)]})
             st.plotly_chart(fig1, use_container_width=True)
 
         with col_b:
@@ -384,12 +630,13 @@ if page == "🏠 Overview":
             fig_sku = go.Figure(go.Pie(
                 labels=["Terjual","OOS","Belum Terjual"],
                 values=[sold_val, oos_val, unsold_val],
-                hole=0.55, marker_colors=["#22c55e","#ef4444","#e2e8f0"],
-                textinfo="label+percent", textfont_size=12,
+                hole=0.55, marker_colors=["#00f5d4","#ff6b6b","#2d3a5a"],
+                textinfo="label+percent", textfont=dict(size=11, color="#ffffff"),
             ))
-            fig_sku.update_layout(showlegend=False, margin=dict(t=10,b=10,l=10,r=10), height=260,
-                annotations=[dict(text=f"<b>{sku_cont:.1f}%</b><br>Sell-Through",
-                                  x=0.5, y=0.5, font_size=14, showarrow=False)])
+            fig_sku.update_layout(**{**PD, "showlegend":False, "height":280,
+                "margin":dict(t=10,b=10,l=10,r=10),
+                "annotations":[dict(text=f"<b>{sku_cont:.1f}%</b><br>Sell-Through",
+                    x=0.5, y=0.5, font=dict(size=14, color="#00f5d4"), showarrow=False)]})
             st.plotly_chart(fig_sku, use_container_width=True)
 
         st.markdown('<div class="section-title">Breakdown Net Sales LM: Trader vs Prof vs Others</div>', unsafe_allow_html=True)
@@ -399,34 +646,37 @@ if page == "🏠 Overview":
         fig_lm = go.Figure(go.Bar(
             x=["Trader","Professional","Others"],
             y=[lm_trader, lm_prof, lm_others],
-            marker_color=["#f97316","#3b82f6","#94a3b8"],
+            marker_color=["#fee440","#00d4ff","#9b5de5"],
             text=[f"{v/lm_ns*100:.1f}%" if lm_ns else "0%" for v in [lm_trader, lm_prof, lm_others]],
-            textposition="outside",
+            textposition="outside", textfont=dict(color="#e2e8f0"),
         ))
-        fig_lm.update_layout(height=300, margin=dict(t=30,b=10,l=10,r=10),
-            plot_bgcolor="white", yaxis=dict(gridcolor="#f1f5f9"),
-            yaxis_title="Net Sales LM (Rp 000)")
+        fig_lm.update_layout(**{**PD, "height":300,
+            "margin":dict(t=30,b=10,l=10,r=10),
+            "yaxis_title":"Net Sales LM (Rp 000)"})
         st.plotly_chart(fig_lm, use_container_width=True)
 
-    # ── Group contribution bar (both portals) ──
+    # ── Group contribution bar ──
     st.markdown('<div class="section-title">Kontribusi LM per Grup Kategori</div>', unsafe_allow_html=True)
     grp_data = cat_df.groupby("Group").agg(Total_NS=("Total NS","sum"), LM_NS=("LM NS","sum")).reset_index()
     grp_data["LM_Cont"] = grp_data["LM_NS"] / grp_data["Total_NS"] * 100
     grp_data = grp_data.sort_values("LM_Cont", ascending=False)
-    bar_color_main = "#8b5cf6" if portal_label == "LSI" else "#3b82f6"
-    bar_color_dim  = "#c4b5fd" if portal_label == "LSI" else "#93c5fd"
+    bar_color_main = "#9b5de5" if portal_label == "LSI" else "#00d4ff"
+    bar_color_dim  = "#5b3785" if portal_label == "LSI" else "#0a5f75"
     colors = [bar_color_main if v >= 20 else bar_color_dim for v in grp_data["LM_Cont"]]
     fig3 = go.Figure(go.Bar(
         x=grp_data["Group"], y=grp_data["LM_Cont"],
         marker_color=colors,
-        text=[f"{v:.1f}%" for v in grp_data["LM_Cont"]], textposition="outside",
+        text=[f"{v:.1f}%" for v in grp_data["LM_Cont"]],
+        textposition="outside", textfont=dict(color="#e2e8f0"),
     ))
-    fig3.add_hline(y=lm_cont, line_dash="dash", line_color="#f97316",
-                   annotation_text=f"Avg: {lm_cont:.2f}%", annotation_position="top right")
-    fig3.update_layout(height=320, margin=dict(t=30,b=20,l=10,r=10),
-        yaxis_title="LM Contribution (%)",
-        yaxis_range=[0, grp_data["LM_Cont"].max()*1.2],
-        plot_bgcolor="white", yaxis=dict(gridcolor="#f1f5f9"))
+    fig3.add_hline(y=lm_cont, line_dash="dash", line_color="#fee440",
+                   annotation_text=f"Avg: {lm_cont:.2f}%",
+                   annotation_font=dict(color="#fee440"),
+                   annotation_position="top right")
+    fig3.update_layout(**{**PD, "height":320,
+        "margin":dict(t=30,b=20,l=10,r=10),
+        "yaxis_title":"LM Contribution (%)",
+        "yaxis_range":[0, grp_data["LM_Cont"].max()*1.2]})
     st.plotly_chart(fig3, use_container_width=True)
 
 
@@ -466,7 +716,7 @@ elif page == "🏪 By Store":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    bar_color = "#8b5cf6" if portal_label == "LSI" else "#3b82f6"
+    bar_color = "#9b5de5" if portal_label == "LSI" else "#00d4ff"
     col1, col2 = st.columns([3, 2])
 
     with col1:
@@ -475,19 +725,20 @@ elif page == "🏪 By Store":
         fig = go.Figure()
         fig.add_trace(go.Bar(
             y=sorted_store["Store Name"], x=sorted_store["Normal NS"],
-            name="Normal", orientation="h", marker_color="#e2e8f0",
+            name="Normal", orientation="h", marker_color="#2d3a5a",
             text=[f"{v:,.0f}" for v in sorted_store["Normal NS"]],
-            textposition="inside", textfont_color="gray",
+            textposition="inside", textfont=dict(color="#94a3b8"),
         ))
         fig.add_trace(go.Bar(
             y=sorted_store["Store Name"], x=sorted_store["LM NS"],
             name="LM (Promo)", orientation="h", marker_color=bar_color,
             text=[f"{v:,.0f}" for v in sorted_store["LM NS"]],
-            textposition="inside", textfont_color="white",
+            textposition="inside", textfont=dict(color="#ffffff"),
         ))
-        fig.update_layout(barmode="stack", height=max(420, len(filtered)*28),
-            margin=dict(t=20,b=20,l=10,r=20), legend=dict(orientation="h", y=1.05),
-            xaxis_title="Net Sales (Rp 000)", plot_bgcolor="white", xaxis=dict(gridcolor="#f1f5f9"))
+        fig.update_layout(**{**PD, "barmode":"stack",
+            "height":max(420, len(filtered)*28),
+            "margin":dict(t=20,b=20,l=10,r=20),
+            "xaxis_title":"Net Sales (Rp 000)"})
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
@@ -495,18 +746,20 @@ elif page == "🏪 By Store":
         sorted_lm = filtered.sort_values("LM Cont%", ascending=True)
         thresh_low = 5 if portal_label == "LSI" else 10
         thresh_mid = 10 if portal_label == "LSI" else 20
-        colors = ["#ef4444" if v < thresh_low else "#f97316" if v < thresh_mid else "#22c55e"
+        colors = ["#ff6b6b" if v < thresh_low else "#fee440" if v < thresh_mid else "#00f5d4"
                   for v in sorted_lm["LM Cont%"]]
         fig2 = go.Figure(go.Bar(
             y=sorted_lm["Store Name"], x=sorted_lm["LM Cont%"],
             orientation="h", marker_color=colors,
-            text=[f"{v:.1f}%" for v in sorted_lm["LM Cont%"]], textposition="outside",
+            text=[f"{v:.1f}%" for v in sorted_lm["LM Cont%"]],
+            textposition="outside", textfont=dict(color="#e2e8f0"),
         ))
-        fig2.add_vline(x=filtered["LM Cont%"].mean(), line_dash="dash", line_color="#94a3b8",
-                       annotation_text="Avg", annotation_position="top")
-        fig2.update_layout(height=max(420, len(filtered)*28),
-            margin=dict(t=20,b=20,l=10,r=40),
-            xaxis_title="LM Contribution (%)", plot_bgcolor="white", xaxis=dict(gridcolor="#f1f5f9"))
+        fig2.add_vline(x=filtered["LM Cont%"].mean(), line_dash="dash", line_color="#718096",
+                       annotation_text="Avg", annotation_font=dict(color="#718096"),
+                       annotation_position="top")
+        fig2.update_layout(**{**PD, "height":max(420, len(filtered)*28),
+            "margin":dict(t=20,b=20,l=10,r=40),
+            "xaxis_title":"LM Contribution (%)"})
         st.plotly_chart(fig2, use_container_width=True)
 
     # ── SKU Section (LSI only) ──
@@ -518,31 +771,33 @@ elif page == "🏪 By Store":
         with col3:
             st.markdown('<div class="section-title">SKU Sell-Through % per Store</div>', unsafe_allow_html=True)
             sorted_sku = filtered.sort_values("SKU Cont%", ascending=True)
-            sku_colors = ["#ef4444" if v < 60 else "#f97316" if v < 75 else "#22c55e" for v in sorted_sku["SKU Cont%"]]
+            sku_colors = ["#ff6b6b" if v < 60 else "#fee440" if v < 75 else "#00f5d4" for v in sorted_sku["SKU Cont%"]]
             fig_sku = go.Figure(go.Bar(
                 y=sorted_sku["Store Name"], x=sorted_sku["SKU Cont%"],
                 orientation="h", marker_color=sku_colors,
-                text=[f"{v:.1f}%" for v in sorted_sku["SKU Cont%"]], textposition="outside",
+                text=[f"{v:.1f}%" for v in sorted_sku["SKU Cont%"]],
+                textposition="outside", textfont=dict(color="#e2e8f0"),
             ))
-            fig_sku.add_vline(x=filtered["SKU Cont%"].mean(), line_dash="dash", line_color="#94a3b8",
-                              annotation_text="Avg")
-            fig_sku.update_layout(height=max(420, len(filtered)*22),
-                margin=dict(t=20,b=20,l=10,r=50),
-                xaxis_title="SKU Sell-Through (%)", plot_bgcolor="white", xaxis=dict(gridcolor="#f1f5f9"))
+            fig_sku.add_vline(x=filtered["SKU Cont%"].mean(), line_dash="dash", line_color="#718096",
+                              annotation_text="Avg", annotation_font=dict(color="#718096"))
+            fig_sku.update_layout(**{**PD, "height":max(420, len(filtered)*22),
+                "margin":dict(t=20,b=20,l=10,r=50),
+                "xaxis_title":"SKU Sell-Through (%)"})
             st.plotly_chart(fig_sku, use_container_width=True)
 
         with col4:
             st.markdown('<div class="section-title">OOS per Store</div>', unsafe_allow_html=True)
             sorted_oos = filtered.sort_values("OOS", ascending=True)
-            oos_colors = ["#22c55e" if v <= 15 else "#f97316" if v <= 40 else "#ef4444" for v in sorted_oos["OOS"]]
+            oos_colors = ["#00f5d4" if v <= 15 else "#fee440" if v <= 40 else "#ff6b6b" for v in sorted_oos["OOS"]]
             fig_oos = go.Figure(go.Bar(
                 y=sorted_oos["Store Name"], x=sorted_oos["OOS"],
                 orientation="h", marker_color=oos_colors,
-                text=[f"{int(v)}" for v in sorted_oos["OOS"]], textposition="outside",
+                text=[f"{int(v)}" for v in sorted_oos["OOS"]],
+                textposition="outside", textfont=dict(color="#e2e8f0"),
             ))
-            fig_oos.update_layout(height=max(420, len(filtered)*22),
-                margin=dict(t=20,b=20,l=10,r=50),
-                xaxis_title="Jumlah SKU OOS", plot_bgcolor="white", xaxis=dict(gridcolor="#f1f5f9"))
+            fig_oos.update_layout(**{**PD, "height":max(420, len(filtered)*22),
+                "margin":dict(t=20,b=20,l=10,r=50),
+                "xaxis_title":"Jumlah SKU OOS"})
             st.plotly_chart(fig_oos, use_container_width=True)
 
         st.markdown('<div class="section-title">Posisi Store: SKU Sell-Through vs OOS (ukuran = Total NS)</div>', unsafe_allow_html=True)
@@ -551,25 +806,23 @@ elif page == "🏪 By Store":
             color_continuous_scale="Purples",
             hover_data={"SKU Total":True,"SKU Sale":True,"LM NS":":,.0f"})
         fig_sc2.update_traces(textposition="top center", textfont_size=9)
-        fig_sc2.update_layout(height=420, margin=dict(t=20,b=20,l=10,r=10),
-            plot_bgcolor="white",
-            xaxis=dict(gridcolor="#f1f5f9"), yaxis=dict(gridcolor="#f1f5f9"),
-            xaxis_title="Jumlah OOS", yaxis_title="SKU Sell-Through (%)",
-            coloraxis_showscale=False)
+        fig_sc2.update_layout(**{**PD, "height":420,
+            "xaxis_title":"Jumlah OOS", "yaxis_title":"SKU Sell-Through (%)",
+            "coloraxis_showscale":False})
         st.plotly_chart(fig_sc2, use_container_width=True)
 
         st.markdown('<div class="section-title">Breakdown LM Sales: Trader / Prof / Others per Store</div>', unsafe_allow_html=True)
         sorted_br = filtered.sort_values("LM NS", ascending=True)
         fig_br = go.Figure()
         fig_br.add_trace(go.Bar(y=sorted_br["Store Name"], x=sorted_br["LM Trader NS"],
-            name="Trader", orientation="h", marker_color="#f97316"))
+            name="Trader", orientation="h", marker_color="#fee440"))
         fig_br.add_trace(go.Bar(y=sorted_br["Store Name"], x=sorted_br["LM Prof NS"],
-            name="Professional", orientation="h", marker_color="#3b82f6"))
+            name="Professional", orientation="h", marker_color="#00d4ff"))
         fig_br.add_trace(go.Bar(y=sorted_br["Store Name"], x=sorted_br["LM Others NS"],
-            name="Others", orientation="h", marker_color="#94a3b8"))
-        fig_br.update_layout(barmode="stack", height=max(420, len(filtered)*22),
-            margin=dict(t=20,b=20,l=10,r=20), legend=dict(orientation="h", y=1.05),
-            xaxis_title="Net Sales LM (Rp 000)", plot_bgcolor="white", xaxis=dict(gridcolor="#f1f5f9"))
+            name="Others", orientation="h", marker_color="#9b5de5"))
+        fig_br.update_layout(**{**PD, "barmode":"stack",
+            "height":max(420, len(filtered)*22),
+            "xaxis_title":"Net Sales LM (Rp 000)"})
         st.plotly_chart(fig_br, use_container_width=True)
 
     # ── Scatter NS vs LM% ──
@@ -580,13 +833,11 @@ elif page == "🏪 By Store":
         color_continuous_scale=sc_color,
         hover_data={"LM NS":":,.0f","Normal NS":":,.0f","Total NS":":,.0f"})
     fig3.update_traces(textposition="top center", textfont_size=10)
-    fig3.add_hline(y=filtered["LM Cont%"].mean(), line_dash="dot", line_color="#94a3b8")
-    fig3.add_vline(x=filtered["Total NS"].mean(), line_dash="dot", line_color="#94a3b8")
-    fig3.update_layout(height=400, margin=dict(t=20,b=20,l=10,r=10),
-        plot_bgcolor="white",
-        xaxis=dict(gridcolor="#f1f5f9"), yaxis=dict(gridcolor="#f1f5f9"),
-        xaxis_title="Total Net Sales (Rp 000)", yaxis_title="LM Contribution (%)",
-        coloraxis_showscale=False)
+    fig3.add_hline(y=filtered["LM Cont%"].mean(), line_dash="dot", line_color="#718096")
+    fig3.add_vline(x=filtered["Total NS"].mean(), line_dash="dot", line_color="#718096")
+    fig3.update_layout(**{**PD, "height":400,
+        "xaxis_title":"Total Net Sales (Rp 000)", "yaxis_title":"LM Contribution (%)",
+        "coloraxis_showscale":False})
     st.plotly_chart(fig3, use_container_width=True)
 
     # ── Data Table ──
@@ -606,7 +857,6 @@ elif page == "🏪 By Store":
                 "LM Cont%":"{:.2f}%","Regular NS":"{:,.1f}",
                 "Regular Cont%":"{:.2f}%","Trader NS":"{:,.3f}","Trader Cont%":"{:.4f}%"}
     st.dataframe(filtered[disp].style.format(fmt), use_container_width=True)
-
 
 # ════════════════════════════════════════════════════════════════════════════
 # PAGE 3 – BY CATEGORY
@@ -656,7 +906,7 @@ elif page == "📦 By Category":
     fig_tree = px.treemap(treemap_df, path=["Group","Category"], values="Total NS",
         color="LM Cont%", color_continuous_scale=cs,
         hover_data={"LM NS":":,.0f","LM Cont%":":.2f"})
-    fig_tree.update_layout(height=420, margin=dict(t=20,b=10,l=10,r=10))
+    fig_tree.update_layout(**{**PD, "height":420, "margin":dict(t=20,b=10,l=10,r=10)})
     fig_tree.update_coloraxes(colorbar_title="LM Cont%")
     st.plotly_chart(fig_tree, use_container_width=True)
 
@@ -667,25 +917,25 @@ elif page == "📦 By Category":
             x="Total NS", y="LM Cont%", size="Total NS", color="Group",
             text="Category", hover_data={"LM NS":":,.0f","Normal NS":":,.0f"})
         fig_bub.update_traces(textposition="top center", textfont_size=9)
-        fig_bub.add_hline(y=lm_pct, line_dash="dot", line_color="#94a3b8",
-                          annotation_text=f"Avg {lm_pct:.1f}%")
-        fig_bub.update_layout(height=420, margin=dict(t=20,b=20,l=10,r=10),
-            plot_bgcolor="white",
-            xaxis=dict(gridcolor="#f1f5f9"), yaxis=dict(gridcolor="#f1f5f9"),
-            xaxis_title="Total Net Sales (Rp 000)", yaxis_title="LM Contribution (%)",
-            legend=dict(orientation="h", y=-0.2))
+        fig_bub.add_hline(y=lm_pct, line_dash="dot", line_color="#718096",
+                          annotation_text=f"Avg {lm_pct:.1f}%",
+                          annotation_font=dict(color="#718096"))
+        fig_bub.update_layout(**{**PD, "height":420,
+            "xaxis_title":"Total Net Sales (Rp 000)", "yaxis_title":"LM Contribution (%)",
+            "legend":dict(orientation="h", y=-0.2, font=dict(color="#e2e8f0"))})
         st.plotly_chart(fig_bub, use_container_width=True)
 
     with col2:
         st.markdown('<div class="section-title">Top 10 Kategori by LM NS</div>', unsafe_allow_html=True)
         top10 = cat_filtered.nlargest(10,"LM NS").sort_values("LM NS")
-        bar_color = "#8b5cf6" if portal_label == "LSI" else "#3b82f6"
+        bar_color = "#9b5de5" if portal_label == "LSI" else "#00d4ff"
         fig_h = go.Figure(go.Bar(y=top10["Category"], x=top10["LM NS"],
             orientation="h", marker_color=bar_color,
-            text=[f"{v:,.0f}" for v in top10["LM NS"]], textposition="outside"))
-        fig_h.update_layout(height=420, margin=dict(t=20,b=20,l=10,r=70),
-            plot_bgcolor="white", xaxis=dict(gridcolor="#f1f5f9"),
-            xaxis_title="LM Net Sales (Rp 000)")
+            text=[f"{v:,.0f}" for v in top10["LM NS"]],
+            textposition="outside", textfont=dict(color="#e2e8f0")))
+        fig_h.update_layout(**{**PD, "height":420,
+            "margin":dict(t=20,b=20,l=10,r=70),
+            "xaxis_title":"LM Net Sales (Rp 000)"})
         st.plotly_chart(fig_h, use_container_width=True)
 
     # ── SKU by Category (LSI only) ──
@@ -697,29 +947,31 @@ elif page == "📦 By Category":
         with col3:
             st.markdown('<div class="section-title">SKU Sell-Through % per Kategori</div>', unsafe_allow_html=True)
             sku_cat = cat_filtered[cat_filtered["SKU Total"] > 0].sort_values("SKU Cont%", ascending=True)
-            sku_colors = ["#ef4444" if v < 60 else "#f97316" if v < 75 else "#22c55e" for v in sku_cat["SKU Cont%"]]
+            sku_colors = ["#ff6b6b" if v < 60 else "#fee440" if v < 75 else "#00f5d4" for v in sku_cat["SKU Cont%"]]
             fig_sc = go.Figure(go.Bar(
                 y=sku_cat["Category"], x=sku_cat["SKU Cont%"],
                 orientation="h", marker_color=sku_colors,
-                text=[f"{v:.1f}%" for v in sku_cat["SKU Cont%"]], textposition="outside"))
-            fig_sc.add_vline(x=sku_cat["SKU Cont%"].mean(), line_dash="dash", line_color="#94a3b8",
-                             annotation_text="Avg")
-            fig_sc.update_layout(height=500, margin=dict(t=20,b=20,l=10,r=50),
-                plot_bgcolor="white", xaxis=dict(gridcolor="#f1f5f9"),
-                xaxis_title="SKU Sell-Through (%)")
+                text=[f"{v:.1f}%" for v in sku_cat["SKU Cont%"]],
+                textposition="outside", textfont=dict(color="#e2e8f0")))
+            fig_sc.add_vline(x=sku_cat["SKU Cont%"].mean(), line_dash="dash", line_color="#718096",
+                             annotation_text="Avg", annotation_font=dict(color="#718096"))
+            fig_sc.update_layout(**{**PD, "height":500,
+                "margin":dict(t=20,b=20,l=10,r=50),
+                "xaxis_title":"SKU Sell-Through (%)"})
             st.plotly_chart(fig_sc, use_container_width=True)
 
         with col4:
             st.markdown('<div class="section-title">OOS per Kategori</div>', unsafe_allow_html=True)
             oos_cat = cat_filtered[cat_filtered["OOS"] > 0].sort_values("OOS", ascending=True)
-            oos_colors = ["#22c55e" if v <= 10 else "#f97316" if v <= 50 else "#ef4444" for v in oos_cat["OOS"]]
+            oos_colors = ["#00f5d4" if v <= 10 else "#fee440" if v <= 50 else "#ff6b6b" for v in oos_cat["OOS"]]
             fig_oc = go.Figure(go.Bar(
                 y=oos_cat["Category"], x=oos_cat["OOS"],
                 orientation="h", marker_color=oos_colors,
-                text=[f"{int(v)}" for v in oos_cat["OOS"]], textposition="outside"))
-            fig_oc.update_layout(height=500, margin=dict(t=20,b=20,l=10,r=50),
-                plot_bgcolor="white", xaxis=dict(gridcolor="#f1f5f9"),
-                xaxis_title="Jumlah SKU OOS")
+                text=[f"{int(v)}" for v in oos_cat["OOS"]],
+                textposition="outside", textfont=dict(color="#e2e8f0")))
+            fig_oc.update_layout(**{**PD, "height":500,
+                "margin":dict(t=20,b=20,l=10,r=50),
+                "xaxis_title":"Jumlah SKU OOS"})
             st.plotly_chart(fig_oc, use_container_width=True)
 
         st.markdown('<div class="section-title">SKU Total vs Terjual per Kategori (ukuran = OOS, warna = Sell-Through%)</div>', unsafe_allow_html=True)
@@ -731,13 +983,11 @@ elif page == "📦 By Category":
         fig_sku_sc.update_traces(textposition="top center", textfont_size=9)
         max_val = sku_sc_df["SKU Total"].max()
         fig_sku_sc.add_trace(go.Scatter(x=[0, max_val], y=[0, max_val],
-            mode="lines", line=dict(dash="dot", color="#94a3b8"), name="100% Sell-Through",
-            showlegend=True))
-        fig_sku_sc.update_layout(height=420, margin=dict(t=20,b=20,l=10,r=10),
-            plot_bgcolor="white",
-            xaxis=dict(gridcolor="#f1f5f9"), yaxis=dict(gridcolor="#f1f5f9"),
-            xaxis_title="SKU Total", yaxis_title="SKU Terjual",
-            coloraxis_colorbar_title="Sell-Through%")
+            mode="lines", line=dict(dash="dot", color="#718096"),
+            name="100% Sell-Through", showlegend=True))
+        fig_sku_sc.update_layout(**{**PD, "height":420,
+            "xaxis_title":"SKU Total", "yaxis_title":"SKU Terjual",
+            "coloraxis_colorbar_title":"Sell-Through%"})
         st.plotly_chart(fig_sku_sc, use_container_width=True)
 
     # ── Group summary ──
@@ -746,14 +996,13 @@ elif page == "📦 By Category":
     grp_sum = grp_sum.sort_values("Total NS", ascending=False)
     fig_grp = go.Figure()
     fig_grp.add_trace(go.Bar(name="LM (Promo)", x=grp_sum["Group"], y=grp_sum["LM NS"],
-        marker_color="#8b5cf6" if portal_label=="LSI" else "#3b82f6",
+        marker_color="#9b5de5" if portal_label=="LSI" else "#00d4ff",
         text=[f"{v/t*100:.1f}%" for v,t in zip(grp_sum["LM NS"],grp_sum["Total NS"])],
-        textposition="outside"))
+        textposition="outside", textfont=dict(color="#e2e8f0")))
     fig_grp.add_trace(go.Bar(name="Normal", x=grp_sum["Group"], y=grp_sum["Normal NS"],
-        marker_color="#e2e8f0"))
-    fig_grp.update_layout(barmode="group", height=340,
-        margin=dict(t=30,b=20,l=10,r=10), legend=dict(orientation="h", y=1.08),
-        yaxis_title="Net Sales (Rp 000)", plot_bgcolor="white", yaxis=dict(gridcolor="#f1f5f9"))
+        marker_color="#2d3a5a"))
+    fig_grp.update_layout(**{**PD, "barmode":"group", "height":340,
+        "yaxis_title":"Net Sales (Rp 000)"})
     st.plotly_chart(fig_grp, use_container_width=True)
 
     # ── Data Table ──
@@ -776,6 +1025,7 @@ elif page == "📦 By Category":
         cat_filtered[disp].sort_values(["Group","LM Cont%"], ascending=[True,False])
         .style.format(fmt),
         use_container_width=True)
+
 # ─── FOOTER ──────────────────────────────────────────────────────────────────
 st.markdown("---")
 st.caption(f"📊 Dashboard {portal_label} · {period_label} | Data: Net Sales")
