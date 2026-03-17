@@ -507,7 +507,6 @@ with st.sidebar:
     st.markdown("---")
     lm_thresh = st.slider("Min LM Contribution (%)", 0.0, 60.0, 0.0, 0.5)
     st.markdown("---")
-    st.caption("Data: Net Sales")
 
 
 # ════════════════════════════════════════════════════════════════════════════
