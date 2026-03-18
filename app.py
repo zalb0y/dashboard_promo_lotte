@@ -299,6 +299,23 @@ LMI_FILES = {
     4: {"path": "data/LM4_19_Feb4_Mar_Nasional.xlsx",    "has_nan_col": False},
 }
 
+# Period labels for trend chart
+LMI_PERIODS = {
+    1: "1-14 Jan",
+    2: "15-28 Jan",
+    3: "29 Jan-18 Feb",
+    4: "19 Feb-4 Mar",
+}
+
+LSI_PERIODS = {
+    1: "30 Des-12 Jan",
+    2: "13-26 Jan",
+    3: "27 Jan-9 Feb",
+    4: "10-23 Feb",
+    5: "24 Feb-9 Mar",
+    6: "10-23 Mar",
+}
+
 @st.cache_data
 def load_lmi(lm_num=1):
     cfg  = LMI_FILES[lm_num]
@@ -467,6 +484,46 @@ def load_lsi(lm_num):
     return store, store_total, cat_detail, period_label
 
 
+@st.cache_data
+def load_all_lsi_trend():
+    """Load trend data for all LSI periods"""
+    trend_data = []
+    for lm_num in range(1, 7):
+        try:
+            _, store_total, _, period_label = load_lsi(lm_num)
+            trend_data.append({
+                "Mailer": f"LM{lm_num}",
+                "Period": LSI_PERIODS.get(lm_num, ""),
+                "Total NS": store_total["Total NS"],
+                "Normal NS": store_total["Normal NS"],
+                "LM NS": store_total["LM NS"],
+                "LM Cont%": store_total["LM Cont%"],
+            })
+        except Exception as e:
+            pass
+    return pd.DataFrame(trend_data)
+
+
+@st.cache_data
+def load_all_lmi_trend():
+    """Load trend data for all LMI periods"""
+    trend_data = []
+    for lm_num in range(1, 5):
+        try:
+            _, store_total, _, period_label = load_lmi(lm_num)
+            trend_data.append({
+                "Mailer": f"LM{lm_num}",
+                "Period": LMI_PERIODS.get(lm_num, ""),
+                "Total NS": store_total["Total NS"],
+                "Normal NS": store_total["Normal NS"],
+                "LM NS": store_total["LM NS"],
+                "LM Cont%": store_total["LM Cont%"],
+            })
+        except Exception as e:
+            pass
+    return pd.DataFrame(trend_data)
+
+
 # ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 📊 Dashboard")
@@ -507,6 +564,7 @@ with st.sidebar:
     st.markdown("---")
     lm_thresh = st.slider("Min LM Contribution (%)", 0.0, 60.0, 0.0, 0.5)
     st.markdown("---")
+    st.caption("Data: Net Sales (dalam ribuan Rupiah)")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -654,6 +712,101 @@ if page == "🏠 Overview":
             "yaxis_title":"Net Sales LM (Rp 000)"})
         st.plotly_chart(fig_lm, use_container_width=True)
 
+    # ══════════════════════════════════════════════════════════════════════════
+    # NEW: TREND CHART - LM Net Sales & Contribution Across All Periods
+    # ══════════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    st.markdown('<div class="section-title">📈 Tren LM Net Sales & Contribution Seluruh Periode</div>', unsafe_allow_html=True)
+    
+    if portal_label == "LSI":
+        trend_df = load_all_lsi_trend()
+        line_color = "#9b5de5"
+        bar_color = "#c084fc"
+    else:
+        trend_df = load_all_lmi_trend()
+        line_color = "#00d4ff"
+        bar_color = "#38bdf8"
+    
+    if not trend_df.empty:
+        # Create figure with secondary y-axis
+        fig_trend = go.Figure()
+        
+        # Add bar chart for LM Net Sales
+        fig_trend.add_trace(go.Bar(
+            x=trend_df["Mailer"],
+            y=trend_df["LM NS"],
+            name="LM Net Sales",
+            marker_color=bar_color,
+            opacity=0.7,
+            text=[f"{v:,.0f}" for v in trend_df["LM NS"]],
+            textposition="outside",
+            textfont=dict(color="#e2e8f0", size=10),
+            yaxis="y",
+        ))
+        
+        # Add line chart for LM Contribution %
+        fig_trend.add_trace(go.Scatter(
+            x=trend_df["Mailer"],
+            y=trend_df["LM Cont%"],
+            name="LM Cont. %",
+            mode="lines+markers+text",
+            line=dict(color=line_color, width=3),
+            marker=dict(size=10, color=line_color, line=dict(width=2, color="#ffffff")),
+            text=[f"{v:.1f}" for v in trend_df["LM Cont%"]],
+            textposition="top center",
+            textfont=dict(color=line_color, size=11, family="Poppins"),
+            yaxis="y2",
+        ))
+        
+        # Update layout with dual y-axis
+        fig_trend.update_layout(
+            plot_bgcolor="#1a2035",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
+            hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
+            height=380,
+            margin=dict(t=50, b=60, l=60, r=60),
+            xaxis=dict(
+                title="Periode",
+                gridcolor="#2d3748",
+                tickfont=dict(color="#94a3b8"),
+            ),
+            yaxis=dict(
+                title=dict(text="LM Net Sales (Rp 000)", font=dict(color=bar_color)),
+                tickfont=dict(color=bar_color),
+                gridcolor="#2d3748",
+                side="left",
+            ),
+            yaxis2=dict(
+                title=dict(text="LM Cont. %", font=dict(color=line_color)),
+                tickfont=dict(color=line_color),
+                overlaying="y",
+                side="right",
+                showgrid=False,
+                range=[0, max(trend_df["LM Cont%"]) * 1.3],
+            ),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5,
+                font=dict(color="#e2e8f0"),
+            ),
+            barmode="overlay",
+        )
+        
+        st.plotly_chart(fig_trend, use_container_width=True)
+        
+        # Show trend data table
+        with st.expander("📋 Lihat Detail Data Tren"):
+            trend_display = trend_df.copy()
+            trend_display["Total NS"] = trend_display["Total NS"].apply(lambda x: f"{x:,.0f}")
+            trend_display["Normal NS"] = trend_display["Normal NS"].apply(lambda x: f"{x:,.0f}")
+            trend_display["LM NS"] = trend_display["LM NS"].apply(lambda x: f"{x:,.0f}")
+            trend_display["LM Cont%"] = trend_display["LM Cont%"].apply(lambda x: f"{x:.2f}%")
+            st.dataframe(trend_display, use_container_width=True)
+
     # ── Group contribution bar ──
     st.markdown('<div class="section-title">Kontribusi LM per Grup Kategori</div>', unsafe_allow_html=True)
     grp_data = cat_df.groupby("Group").agg(Total_NS=("Total NS","sum"), LM_NS=("LM NS","sum")).reset_index()
@@ -766,38 +919,113 @@ elif page == "🏪 By Store":
         st.markdown("---")
         st.markdown("### 📦 SKU Performance per Store")
 
-        col3, col4 = st.columns(2)
-        with col3:
-            st.markdown('<div class="section-title">SKU Sell-Through % per Store</div>', unsafe_allow_html=True)
-            sorted_sku = filtered.sort_values("SKU Cont%", ascending=True)
-            sku_colors = ["#ff6b6b" if v < 60 else "#fee440" if v < 75 else "#00f5d4" for v in sorted_sku["SKU Cont%"]]
-            fig_sku = go.Figure(go.Bar(
-                y=sorted_sku["Store Name"], x=sorted_sku["SKU Cont%"],
-                orientation="h", marker_color=sku_colors,
-                text=[f"{v:.1f}%" for v in sorted_sku["SKU Cont%"]],
-                textposition="outside", textfont=dict(color="#e2e8f0"),
-            ))
-            fig_sku.add_vline(x=filtered["SKU Cont%"].mean(), line_dash="dash", line_color="#718096",
-                              annotation_text="Avg", annotation_font=dict(color="#718096"))
-            fig_sku.update_layout(**{**PD, "height":max(420, len(filtered)*22),
-                "margin":dict(t=20,b=20,l=10,r=50),
-                "xaxis_title":"SKU Sell-Through (%)"})
-            st.plotly_chart(fig_sku, use_container_width=True)
+        # Combined SKU Performance Chart (Stacked Bar: Terjual / OOS / Belum Terjual)
+        st.markdown('<div class="section-title">SKU Terjual / OOS / Belum Terjual per Store</div>', unsafe_allow_html=True)
+        
+        # Prepare data
+        sku_store = filtered[filtered["SKU Total"] > 0].copy()
+        sku_store["SKU Sold"] = sku_store["SKU Sale"]
+        sku_store["SKU Unsold"] = sku_store["SKU Total"] - sku_store["SKU Sale"] - sku_store["OOS"]
+        sku_store["SKU Unsold"] = sku_store["SKU Unsold"].clip(lower=0)
+        sku_store = sku_store.sort_values("SKU Total", ascending=True)
+        
+        # Create stacked bar chart
+        fig_sku_combined = go.Figure()
+        
+        # SKU Terjual (green)
+        fig_sku_combined.add_trace(go.Bar(
+            y=sku_store["Store Name"],
+            x=sku_store["SKU Sold"],
+            name="SKU Terjual",
+            orientation="h",
+            marker_color="#00f5d4",
+            text=[f"{int(v)}" for v in sku_store["SKU Sold"]],
+            textposition="inside",
+            textfont=dict(color="#1a1a2e", size=10),
+            hovertemplate="<b>%{y}</b><br>SKU Terjual: %{x:,.0f}<extra></extra>",
+        ))
+        
+        # OOS (red)
+        fig_sku_combined.add_trace(go.Bar(
+            y=sku_store["Store Name"],
+            x=sku_store["OOS"],
+            name="OOS",
+            orientation="h",
+            marker_color="#ff6b6b",
+            text=[f"{int(v)}" if v > 0 else "" for v in sku_store["OOS"]],
+            textposition="inside",
+            textfont=dict(color="#ffffff", size=10),
+            hovertemplate="<b>%{y}</b><br>OOS: %{x:,.0f}<extra></extra>",
+        ))
+        
+        # Belum Terjual (purple)
+        fig_sku_combined.add_trace(go.Bar(
+            y=sku_store["Store Name"],
+            x=sku_store["SKU Unsold"],
+            name="Belum Terjual",
+            orientation="h",
+            marker_color="#9b5de5",
+            text=[f"{int(v)}" if v > 5 else "" for v in sku_store["SKU Unsold"]],
+            textposition="inside",
+            textfont=dict(color="#ffffff", size=10),
+            hovertemplate="<b>%{y}</b><br>Belum Terjual: %{x:,.0f}<extra></extra>",
+        ))
+        
+        # Add Sell-Through % annotations on the right
+        for _, row in sku_store.iterrows():
+            fig_sku_combined.add_annotation(
+                x=row["SKU Total"] + (sku_store["SKU Total"].max() * 0.02),
+                y=row["Store Name"],
+                text=f"{row['SKU Cont%']:.1f}%",
+                showarrow=False,
+                font=dict(color="#00f5d4", size=10),
+                xanchor="left",
+            )
+        
+        fig_sku_combined.update_layout(
+            plot_bgcolor="#1a2035",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
+            hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
+            barmode="stack",
+            height=max(500, len(sku_store)*26),
+            margin=dict(t=30, b=20, l=10, r=80),
+            xaxis_title="Jumlah SKU",
+            xaxis=dict(
+                gridcolor="#2d3748",
+                zerolinecolor="#2d3748",
+                tickfont=dict(color="#94a3b8"),
+                range=[0, sku_store["SKU Total"].max() * 1.15],
+            ),
+            yaxis=dict(
+                gridcolor="#2d3748",
+                zerolinecolor="#2d3748",
+                tickfont=dict(color="#94a3b8"),
+            ),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5,
+                font=dict(color="#e2e8f0"),
+            ),
+        )
+        
+        st.plotly_chart(fig_sku_combined, use_container_width=True)
 
-        with col4:
-            st.markdown('<div class="section-title">OOS per Store</div>', unsafe_allow_html=True)
-            sorted_oos = filtered.sort_values("OOS", ascending=True)
-            oos_colors = ["#00f5d4" if v <= 15 else "#fee440" if v <= 40 else "#ff6b6b" for v in sorted_oos["OOS"]]
-            fig_oos = go.Figure(go.Bar(
-                y=sorted_oos["Store Name"], x=sorted_oos["OOS"],
-                orientation="h", marker_color=oos_colors,
-                text=[f"{int(v)}" for v in sorted_oos["OOS"]],
-                textposition="outside", textfont=dict(color="#e2e8f0"),
-            ))
-            fig_oos.update_layout(**{**PD, "height":max(420, len(filtered)*22),
-                "margin":dict(t=20,b=20,l=10,r=50),
-                "xaxis_title":"Jumlah SKU OOS"})
-            st.plotly_chart(fig_oos, use_container_width=True)
+        # Insight box
+        avg_sell_through_store = sku_store["SKU Cont%"].mean()
+        total_oos_store = sku_store["OOS"].sum()
+        total_sold_store = sku_store["SKU Sale"].sum()
+        total_sku_store = sku_store["SKU Total"].sum()
+        
+        if avg_sell_through_store >= 80:
+            st.markdown(insight(f"Rata-rata Sell-Through per Store: {avg_sell_through_store:.1f}% — Performa sangat baik! Total {int(total_sold_store):,} dari {int(total_sku_store):,} SKU terjual.", "success"), unsafe_allow_html=True)
+        elif avg_sell_through_store >= 60:
+            st.markdown(insight(f"Rata-rata Sell-Through per Store: {avg_sell_through_store:.1f}% — Performa cukup baik. OOS: {int(total_oos_store):,} SKU perlu diperhatikan.", "info"), unsafe_allow_html=True)
+        else:
+            st.markdown(insight(f"Rata-rata Sell-Through per Store: {avg_sell_through_store:.1f}% — Perlu peningkatan. {int(total_oos_store):,} SKU OOS mempengaruhi penjualan.", "warning"), unsafe_allow_html=True)
 
         st.markdown('<div class="section-title">Posisi Store: SKU Sell-Through vs OOS (ukuran = Total NS)</div>', unsafe_allow_html=True)
         fig_sc2 = px.scatter(filtered, x="OOS", y="SKU Cont%",
@@ -805,9 +1033,19 @@ elif page == "🏪 By Store":
             color_continuous_scale="Purples",
             hover_data={"SKU Total":True,"SKU Sale":True,"LM NS":":,.0f"})
         fig_sc2.update_traces(textposition="top center", textfont_size=9)
-        fig_sc2.update_layout(**{**PD, "height":420,
-            "xaxis_title":"Jumlah OOS", "yaxis_title":"SKU Sell-Through (%)",
-            "coloraxis_showscale":False})
+        fig_sc2.update_layout(
+            plot_bgcolor="#1a2035",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
+            hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
+            height=420,
+            margin=dict(t=30, b=20, l=10, r=10),
+            xaxis_title="Jumlah OOS",
+            yaxis_title="SKU Sell-Through (%)",
+            xaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
+            yaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
+            coloraxis_showscale=False,
+        )
         st.plotly_chart(fig_sc2, use_container_width=True)
 
         st.markdown('<div class="section-title">Breakdown LM Sales: Trader / Prof / Others per Store</div>', unsafe_allow_html=True)
@@ -819,9 +1057,19 @@ elif page == "🏪 By Store":
             name="Professional", orientation="h", marker_color="#00d4ff"))
         fig_br.add_trace(go.Bar(y=sorted_br["Store Name"], x=sorted_br["LM Others NS"],
             name="Others", orientation="h", marker_color="#9b5de5"))
-        fig_br.update_layout(**{**PD, "barmode":"stack",
-            "height":max(420, len(filtered)*22),
-            "xaxis_title":"Net Sales LM (Rp 000)"})
+        fig_br.update_layout(
+            plot_bgcolor="#1a2035",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
+            hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
+            barmode="stack",
+            height=max(420, len(filtered)*22),
+            margin=dict(t=30, b=20, l=10, r=10),
+            xaxis_title="Net Sales LM (Rp 000)",
+            xaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
+            yaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
+            legend=dict(bgcolor="rgba(26,32,53,0.8)", bordercolor="#2d3748", borderwidth=1, font=dict(color="#e2e8f0")),
+        )
         st.plotly_chart(fig_br, use_container_width=True)
 
     # ── Scatter NS vs LM% ──
@@ -937,41 +1185,118 @@ elif page == "📦 By Category":
             "xaxis_title":"LM Net Sales (Rp 000)"})
         st.plotly_chart(fig_h, use_container_width=True)
 
-    # ── SKU by Category (LSI only) ──
+    # ══════════════════════════════════════════════════════════════════════════
+    # REVISED: SKU Performance per Kategori (LSI only)
+    # Combined chart: Sell-Through %, SKU Sale, OOS - Stacked horizontal bar
+    # ══════════════════════════════════════════════════════════════════════════
     if portal_label == "LSI":
         st.markdown("---")
         st.markdown("### 📦 SKU Performance per Kategori")
 
-        col3, col4 = st.columns(2)
-        with col3:
-            st.markdown('<div class="section-title">SKU Sell-Through % per Kategori</div>', unsafe_allow_html=True)
-            sku_cat = cat_filtered[cat_filtered["SKU Total"] > 0].sort_values("SKU Cont%", ascending=True)
-            sku_colors = ["#ff6b6b" if v < 60 else "#fee440" if v < 75 else "#00f5d4" for v in sku_cat["SKU Cont%"]]
-            fig_sc = go.Figure(go.Bar(
-                y=sku_cat["Category"], x=sku_cat["SKU Cont%"],
-                orientation="h", marker_color=sku_colors,
-                text=[f"{v:.1f}%" for v in sku_cat["SKU Cont%"]],
-                textposition="outside", textfont=dict(color="#e2e8f0")))
-            fig_sc.add_vline(x=sku_cat["SKU Cont%"].mean(), line_dash="dash", line_color="#718096",
-                             annotation_text="Avg", annotation_font=dict(color="#718096"))
-            fig_sc.update_layout(**{**PD, "height":500,
-                "margin":dict(t=20,b=20,l=10,r=50),
-                "xaxis_title":"SKU Sell-Through (%)"})
-            st.plotly_chart(fig_sc, use_container_width=True)
+        # Combined SKU Performance Chart - Stacked horizontal bar like the Breakdown LM Sales chart
+        st.markdown('<div class="section-title">SKU Performance: Sell-Through% / SKU Terjual / OOS per Kategori</div>', unsafe_allow_html=True)
+        
+        sku_cat = cat_filtered[cat_filtered["SKU Total"] > 0].copy()
+        sku_cat = sku_cat.sort_values("SKU Total", ascending=True)
+        
+        # Calculate unsold SKU (not OOS)
+        sku_cat["SKU Unsold"] = sku_cat["SKU Total"] - sku_cat["SKU Sale"] - sku_cat["OOS"]
+        sku_cat["SKU Unsold"] = sku_cat["SKU Unsold"].clip(lower=0)
+        
+        fig_sku_combined = go.Figure()
+        
+        # Add SKU Sale (Terjual) - Green/Teal
+        fig_sku_combined.add_trace(go.Bar(
+            y=sku_cat["Category"],
+            x=sku_cat["SKU Sale"],
+            name="SKU Terjual",
+            orientation="h",
+            marker_color="#00f5d4",
+            text=[f"{int(v)}" for v in sku_cat["SKU Sale"]],
+            textposition="inside",
+            textfont=dict(color="#1a1a2e", size=9),
+            hovertemplate="<b>%{y}</b><br>SKU Terjual: %{x:,.0f}<extra></extra>",
+        ))
+        
+        # Add OOS - Red
+        fig_sku_combined.add_trace(go.Bar(
+            y=sku_cat["Category"],
+            x=sku_cat["OOS"],
+            name="OOS",
+            orientation="h",
+            marker_color="#ff6b6b",
+            text=[f"{int(v)}" for v in sku_cat["OOS"]],
+            textposition="inside",
+            textfont=dict(color="#ffffff", size=9),
+            hovertemplate="<b>%{y}</b><br>OOS: %{x:,.0f}<extra></extra>",
+        ))
+        
+        # Add Unsold (Belum Terjual) - Gray/Purple
+        fig_sku_combined.add_trace(go.Bar(
+            y=sku_cat["Category"],
+            x=sku_cat["SKU Unsold"],
+            name="Belum Terjual",
+            orientation="h",
+            marker_color="#9b5de5",
+            text=[f"{int(v)}" if v > 0 else "" for v in sku_cat["SKU Unsold"]],
+            textposition="inside",
+            textfont=dict(color="#ffffff", size=9),
+            hovertemplate="<b>%{y}</b><br>Belum Terjual: %{x:,.0f}<extra></extra>",
+        ))
+        
+        # Add Sell-Through % as text annotation on the right
+        for i, row in sku_cat.iterrows():
+            fig_sku_combined.add_annotation(
+                x=row["SKU Total"] + (sku_cat["SKU Total"].max() * 0.02),
+                y=row["Category"],
+                text=f"{row['SKU Cont%']:.1f}%",
+                showarrow=False,
+                font=dict(color="#00f5d4", size=10),
+                xanchor="left",
+            )
+        
+        fig_sku_combined.update_layout(
+            plot_bgcolor="#1a2035",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
+            hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
+            barmode="stack",
+            height=max(500, len(sku_cat)*26),
+            margin=dict(t=30, b=20, l=10, r=80),
+            xaxis_title="Jumlah SKU",
+            xaxis=dict(
+                gridcolor="#2d3748",
+                zerolinecolor="#2d3748",
+                tickfont=dict(color="#94a3b8"),
+                range=[0, sku_cat["SKU Total"].max() * 1.15],
+            ),
+            yaxis=dict(
+                gridcolor="#2d3748",
+                zerolinecolor="#2d3748",
+                tickfont=dict(color="#94a3b8"),
+            ),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5,
+                font=dict(color="#e2e8f0"),
+            ),
+        )
+        
+        st.plotly_chart(fig_sku_combined, use_container_width=True)
 
-        with col4:
-            st.markdown('<div class="section-title">OOS per Kategori</div>', unsafe_allow_html=True)
-            oos_cat = cat_filtered[cat_filtered["OOS"] > 0].sort_values("OOS", ascending=True)
-            oos_colors = ["#00f5d4" if v <= 10 else "#fee440" if v <= 50 else "#ff6b6b" for v in oos_cat["OOS"]]
-            fig_oc = go.Figure(go.Bar(
-                y=oos_cat["Category"], x=oos_cat["OOS"],
-                orientation="h", marker_color=oos_colors,
-                text=[f"{int(v)}" for v in oos_cat["OOS"]],
-                textposition="outside", textfont=dict(color="#e2e8f0")))
-            fig_oc.update_layout(**{**PD, "height":500,
-                "margin":dict(t=20,b=20,l=10,r=50),
-                "xaxis_title":"Jumlah SKU OOS"})
-            st.plotly_chart(fig_oc, use_container_width=True)
+        # Additional insight box
+        avg_sell_through = sku_cat["SKU Cont%"].mean()
+        total_oos = sku_cat["OOS"].sum()
+        total_sold = sku_cat["SKU Sale"].sum()
+        st.markdown(insight(
+            f"Rata-rata Sell-Through: <b>{avg_sell_through:.1f}%</b> | "
+            f"Total SKU Terjual: <b>{int(total_sold):,}</b> | "
+            f"Total OOS: <b>{int(total_oos):,}</b>",
+            "info"
+        ), unsafe_allow_html=True)
 
         st.markdown('<div class="section-title">SKU Total vs Terjual per Kategori (ukuran = OOS, warna = Sell-Through%)</div>', unsafe_allow_html=True)
         sku_sc_df = cat_filtered[cat_filtered["SKU Total"] > 0].copy()
