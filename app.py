@@ -568,6 +568,110 @@ with st.sidebar:
 # PAGE 1 – OVERVIEW
 # ════════════════════════════════════════════════════════════════════════════
 if page == "🏠 Overview":
+    
+    # ══════════════════════════════════════════════════════════════════════════
+    # TREND CHART - PALING ATAS (di atas semua elemen lain)
+    # ══════════════════════════════════════════════════════════════════════════
+    st.markdown('<div class="section-title">📈 Tren LM Net Sales & Contribution Seluruh Periode</div>', unsafe_allow_html=True)
+    
+    if portal_label == "LSI":
+        trend_df = load_all_lsi_trend()
+        line_color = "#fee440"  # Kuning terang untuk line
+        bar_color = "#0ea5e9"   # Biru cyan untuk bar
+    else:
+        trend_df = load_all_lmi_trend()
+        line_color = "#fee440"  # Kuning terang untuk line
+        bar_color = "#00d4ff"   # Cyan untuk bar
+    
+    if not trend_df.empty:
+        # Highlight current period
+        current_lm = lm_num if portal_label == "LSI" else lm_num_lmi
+        bar_colors = [bar_color if i+1 != current_lm else "#00f5d4" for i in range(len(trend_df))]
+        
+        fig_trend = go.Figure()
+        
+        # Add bar chart for LM Net Sales
+        fig_trend.add_trace(go.Bar(
+            x=trend_df["Mailer"],
+            y=trend_df["LM NS"],
+            name="LM Net Sales",
+            marker_color=bar_colors,
+            opacity=0.85,
+            text=[f"{v:,.0f}" for v in trend_df["LM NS"]],
+            textposition="outside",
+            textfont=dict(color="#e2e8f0", size=11, weight="bold"),
+            yaxis="y",
+        ))
+        
+        # Add line chart for LM Contribution %
+        fig_trend.add_trace(go.Scatter(
+            x=trend_df["Mailer"],
+            y=trend_df["LM Cont%"],
+            name="LM Cont. %",
+            mode="lines+markers+text",
+            line=dict(color=line_color, width=3),
+            marker=dict(size=12, color=line_color, line=dict(width=2, color="#1a1a2e")),
+            text=[f"{v:.1f}%" for v in trend_df["LM Cont%"]],
+            textposition="bottom center",
+            textfont=dict(color="#ffffff", size=12, family="Poppins"),
+            yaxis="y2",
+        ))
+        
+        # Update layout with dual y-axis
+        fig_trend.update_layout(
+            plot_bgcolor="#1a2035",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
+            hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
+            height=350,
+            margin=dict(t=60, b=40, l=60, r=60),
+            xaxis=dict(
+                title="Periode",
+                gridcolor="#2d3748",
+                tickfont=dict(color="#94a3b8", size=12),
+            ),
+            yaxis=dict(
+                title=dict(text="LM Net Sales", font=dict(color=bar_color)),
+                tickfont=dict(color=bar_color),
+                gridcolor="#2d3748",
+                side="left",
+            ),
+            yaxis2=dict(
+                title=dict(text="LM Cont. %", font=dict(color=line_color)),
+                tickfont=dict(color=line_color),
+                overlaying="y",
+                side="right",
+                showgrid=False,
+                range=[0, max(trend_df["LM Cont%"]) * 1.5],
+            ),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5,
+                font=dict(color="#e2e8f0"),
+                bgcolor="rgba(26,32,53,0.8)",
+            ),
+            barmode="overlay",
+        )
+        
+        st.plotly_chart(fig_trend, use_container_width=True)
+        
+        # Expander untuk detail data tren
+        with st.expander("📋 Lihat Detail Data Tren"):
+            trend_display = trend_df.copy()
+            trend_display["Total NS"] = trend_display["Total NS"].apply(lambda x: f"{x:,.0f}")
+            trend_display["Normal NS"] = trend_display["Normal NS"].apply(lambda x: f"{x:,.0f}")
+            trend_display["LM NS"] = trend_display["LM NS"].apply(lambda x: f"{x:,.0f}")
+            trend_display["LM Cont%"] = trend_display["LM Cont%"].apply(lambda x: f"{x:.2f}%")
+            st.dataframe(trend_display, use_container_width=True)
+
+    st.markdown("---")
+    
+    # ══════════════════════════════════════════════════════════════════════════
+    # BADGE & TITLE (setelah trend chart)
+    # ══════════════════════════════════════════════════════════════════════════
     badge_cls = "badge-lsi" if portal_label == "LSI" else "badge-lmi"
     st.markdown(f'<span class="portal-badge {badge_cls}">{portal_label}</span>', unsafe_allow_html=True)
     st.markdown(f"## 📊 Net Sales Overview — {period_label}")
@@ -709,102 +813,6 @@ if page == "🏠 Overview":
             "yaxis_title":"Net Sales LM"})
         st.plotly_chart(fig_lm, use_container_width=True)
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # NEW: TREND CHART - LM Net Sales & Contribution Across All Periods
-    # ══════════════════════════════════════════════════════════════════════════
-    st.markdown("---")
-    st.markdown('<div class="section-title">📈 Tren LM Net Sales & Contribution Seluruh Periode</div>', unsafe_allow_html=True)
-    
-    if portal_label == "LSI":
-        trend_df = load_all_lsi_trend()
-        line_color = "#fee440"  # Kuning terang untuk line - kontras tinggi
-        bar_color = "#0ea5e9"   # Biru cyan untuk bar
-    else:
-        trend_df = load_all_lmi_trend()
-        line_color = "#fee440"  # Kuning terang untuk line
-        bar_color = "#00d4ff"   # Cyan untuk bar
-    
-    if not trend_df.empty:
-        # Create figure with secondary y-axis
-        fig_trend = go.Figure()
-        
-        # Add bar chart for LM Net Sales
-        fig_trend.add_trace(go.Bar(
-            x=trend_df["Mailer"],
-            y=trend_df["LM NS"],
-            name="LM Net Sales",
-            marker_color=bar_color,
-            opacity=0.85,
-            text=[f"{v:,.0f}" for v in trend_df["LM NS"]],
-            textposition="outside",
-            textfont=dict(color="#e2e8f0", size=11, weight="bold"),
-            yaxis="y",
-        ))
-        
-        # Add line chart for LM Contribution %
-        fig_trend.add_trace(go.Scatter(
-            x=trend_df["Mailer"],
-            y=trend_df["LM Cont%"],
-            name="LM Cont. %",
-            mode="lines+markers+text",
-            line=dict(color=line_color, width=3),
-            marker=dict(size=12, color=line_color, line=dict(width=2, color="#1a1a2e")),
-            text=[f"{v:.1f}%" for v in trend_df["LM Cont%"]],
-            textposition="bottom center",
-            textfont=dict(color="#ffffff", size=12, family="Poppins"),
-            yaxis="y2",
-        ))
-        
-        # Update layout with dual y-axis
-        fig_trend.update_layout(
-            plot_bgcolor="#1a2035",
-            paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
-            hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
-            height=400,
-            margin=dict(t=60, b=60, l=60, r=60),
-            xaxis=dict(
-                title="Periode",
-                gridcolor="#2d3748",
-                tickfont=dict(color="#94a3b8", size=12),
-            ),
-            yaxis=dict(
-                title=dict(text="LM Net Sales", font=dict(color=bar_color)),
-                tickfont=dict(color=bar_color),
-                gridcolor="#2d3748",
-                side="left",
-            ),
-            yaxis2=dict(
-                title=dict(text="LM Cont. %", font=dict(color=line_color)),
-                tickfont=dict(color=line_color),
-                overlaying="y",
-                side="right",
-                showgrid=False,
-                range=[0, max(trend_df["LM Cont%"]) * 1.5],  # Lebih banyak ruang untuk label
-            ),
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="center",
-                x=0.5,
-                font=dict(color="#e2e8f0"),
-                bgcolor="rgba(26,32,53,0.8)",
-            ),
-            barmode="overlay",
-        )
-        
-        st.plotly_chart(fig_trend, use_container_width=True)
-        
-        # Show trend data table
-        with st.expander("📋 Lihat Detail Data Tren"):
-            trend_display = trend_df.copy()
-            trend_display["Total NS"] = trend_display["Total NS"].apply(lambda x: f"{x:,.0f}")
-            trend_display["Normal NS"] = trend_display["Normal NS"].apply(lambda x: f"{x:,.0f}")
-            trend_display["LM NS"] = trend_display["LM NS"].apply(lambda x: f"{x:,.0f}")
-            trend_display["LM Cont%"] = trend_display["LM Cont%"].apply(lambda x: f"{x:.2f}%")
-            st.dataframe(trend_display, use_container_width=True)
-
     # ── Group contribution bar ──
     st.markdown('<div class="section-title">Kontribusi LM per Grup Kategori</div>', unsafe_allow_html=True)
     grp_data = cat_df.groupby("Group").agg(Total_NS=("Total NS","sum"), LM_NS=("LM NS","sum")).reset_index()
@@ -917,20 +925,17 @@ elif page == "🏪 By Store":
         st.markdown("---")
         st.markdown("### 📦 SKU Performance per Store")
 
-        # Combined SKU Performance Chart (Stacked Bar: Terjual / OOS / Belum Terjual)
+        # Combined SKU Performance Chart
         st.markdown('<div class="section-title">SKU Terjual / OOS / Belum Terjual per Store</div>', unsafe_allow_html=True)
         
-        # Prepare data
         sku_store = filtered[filtered["SKU Total"] > 0].copy()
         sku_store["SKU Sold"] = sku_store["SKU Sale"]
         sku_store["SKU Unsold"] = sku_store["SKU Total"] - sku_store["SKU Sale"] - sku_store["OOS"]
         sku_store["SKU Unsold"] = sku_store["SKU Unsold"].clip(lower=0)
         sku_store = sku_store.sort_values("SKU Total", ascending=True)
         
-        # Create stacked bar chart
         fig_sku_combined = go.Figure()
         
-        # SKU Terjual (green)
         fig_sku_combined.add_trace(go.Bar(
             y=sku_store["Store Name"],
             x=sku_store["SKU Sold"],
@@ -943,7 +948,6 @@ elif page == "🏪 By Store":
             hovertemplate="<b>%{y}</b><br>SKU Terjual: %{x:,.0f}<extra></extra>",
         ))
         
-        # OOS (red)
         fig_sku_combined.add_trace(go.Bar(
             y=sku_store["Store Name"],
             x=sku_store["OOS"],
@@ -956,7 +960,6 @@ elif page == "🏪 By Store":
             hovertemplate="<b>%{y}</b><br>OOS: %{x:,.0f}<extra></extra>",
         ))
         
-        # Belum Terjual (purple)
         fig_sku_combined.add_trace(go.Bar(
             y=sku_store["Store Name"],
             x=sku_store["SKU Unsold"],
@@ -969,7 +972,6 @@ elif page == "🏪 By Store":
             hovertemplate="<b>%{y}</b><br>Belum Terjual: %{x:,.0f}<extra></extra>",
         ))
         
-        # Add Sell-Through % annotations on the right
         for _, row in sku_store.iterrows():
             fig_sku_combined.add_annotation(
                 x=row["SKU Total"] + (sku_store["SKU Total"].max() * 0.02),
@@ -1170,27 +1172,21 @@ elif page == "📦 By Category":
             "xaxis_title":"LM Net Sales"})
         st.plotly_chart(fig_h, use_container_width=True)
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # REVISED: SKU Performance per Kategori (LSI only)
-    # Combined chart: Sell-Through %, SKU Sale, OOS - Stacked horizontal bar
-    # ══════════════════════════════════════════════════════════════════════════
+    # ── SKU by Category (LSI only) ──
     if portal_label == "LSI":
         st.markdown("---")
         st.markdown("### 📦 SKU Performance per Kategori")
 
-        # Combined SKU Performance Chart - Stacked horizontal bar like the Breakdown LM Sales chart
         st.markdown('<div class="section-title">SKU Terjual / OOS / Belum Terjual per Kategori</div>', unsafe_allow_html=True)
         
         sku_cat = cat_filtered[cat_filtered["SKU Total"] > 0].copy()
         sku_cat = sku_cat.sort_values("SKU Total", ascending=True)
         
-        # Calculate unsold SKU (not OOS)
         sku_cat["SKU Unsold"] = sku_cat["SKU Total"] - sku_cat["SKU Sale"] - sku_cat["OOS"]
         sku_cat["SKU Unsold"] = sku_cat["SKU Unsold"].clip(lower=0)
         
         fig_sku_combined = go.Figure()
         
-        # Add SKU Sale (Terjual) - Green/Teal
         fig_sku_combined.add_trace(go.Bar(
             y=sku_cat["Category"],
             x=sku_cat["SKU Sale"],
@@ -1203,7 +1199,6 @@ elif page == "📦 By Category":
             hovertemplate="<b>%{y}</b><br>SKU Terjual: %{x:,.0f}<extra></extra>",
         ))
         
-        # Add OOS - Red
         fig_sku_combined.add_trace(go.Bar(
             y=sku_cat["Category"],
             x=sku_cat["OOS"],
@@ -1216,7 +1211,6 @@ elif page == "📦 By Category":
             hovertemplate="<b>%{y}</b><br>OOS: %{x:,.0f}<extra></extra>",
         ))
         
-        # Add Unsold (Belum Terjual) - Gray/Purple
         fig_sku_combined.add_trace(go.Bar(
             y=sku_cat["Category"],
             x=sku_cat["SKU Unsold"],
@@ -1229,7 +1223,6 @@ elif page == "📦 By Category":
             hovertemplate="<b>%{y}</b><br>Belum Terjual: %{x:,.0f}<extra></extra>",
         ))
         
-        # Add Sell-Through % as text annotation on the right
         for i, row in sku_cat.iterrows():
             fig_sku_combined.add_annotation(
                 x=row["SKU Total"] + (sku_cat["SKU Total"].max() * 0.02),
