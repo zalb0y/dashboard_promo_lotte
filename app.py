@@ -97,7 +97,6 @@ st.markdown("""
     /* Sembunyikan tombol collapse di dalam sidebar */
     [data-testid="stSidebar"] button[data-testid="stBaseButton-headerNoPadding"],
     [data-testid="stSidebarHeader"] button,
-    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
     button[kind="headerNoPadding"] {
         display: none !important;
         visibility: hidden !important;
@@ -115,10 +114,8 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Sembunyikan collapsed control juga */
-    [data-testid="stSidebarCollapsedControl"] {
-        display: none !important;
-    }
+    /* Jangan sembunyikan collapsed control - biarkan user bisa buka sidebar */
+    /* [data-testid="stSidebarCollapsedControl"] tetap visible */
 
     /* ── Sidebar Styling ── */
     [data-testid="stSidebar"] {
@@ -709,7 +706,7 @@ if page == "🏠 Overview":
         ))
         fig_lm.update_layout(**{**PD, "height":300,
             "margin":dict(t=30,b=10,l=10,r=10),
-            "yaxis_title":"Net Sales LM (Rp 000)"})
+            "yaxis_title":"Net Sales LM"})
         st.plotly_chart(fig_lm, use_container_width=True)
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -720,12 +717,12 @@ if page == "🏠 Overview":
     
     if portal_label == "LSI":
         trend_df = load_all_lsi_trend()
-        line_color = "#9b5de5"
-        bar_color = "#c084fc"
+        line_color = "#fee440"  # Kuning terang untuk line - kontras tinggi
+        bar_color = "#0ea5e9"   # Biru cyan untuk bar
     else:
         trend_df = load_all_lmi_trend()
-        line_color = "#00d4ff"
-        bar_color = "#38bdf8"
+        line_color = "#fee440"  # Kuning terang untuk line
+        bar_color = "#00d4ff"   # Cyan untuk bar
     
     if not trend_df.empty:
         # Create figure with secondary y-axis
@@ -737,10 +734,10 @@ if page == "🏠 Overview":
             y=trend_df["LM NS"],
             name="LM Net Sales",
             marker_color=bar_color,
-            opacity=0.7,
+            opacity=0.85,
             text=[f"{v:,.0f}" for v in trend_df["LM NS"]],
             textposition="outside",
-            textfont=dict(color="#e2e8f0", size=10),
+            textfont=dict(color="#e2e8f0", size=11, weight="bold"),
             yaxis="y",
         ))
         
@@ -751,10 +748,10 @@ if page == "🏠 Overview":
             name="LM Cont. %",
             mode="lines+markers+text",
             line=dict(color=line_color, width=3),
-            marker=dict(size=10, color=line_color, line=dict(width=2, color="#ffffff")),
-            text=[f"{v:.1f}" for v in trend_df["LM Cont%"]],
-            textposition="top center",
-            textfont=dict(color=line_color, size=11, family="Poppins"),
+            marker=dict(size=12, color=line_color, line=dict(width=2, color="#1a1a2e")),
+            text=[f"{v:.1f}%" for v in trend_df["LM Cont%"]],
+            textposition="bottom center",
+            textfont=dict(color="#ffffff", size=12, family="Poppins"),
             yaxis="y2",
         ))
         
@@ -764,15 +761,15 @@ if page == "🏠 Overview":
             paper_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
             hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
-            height=380,
-            margin=dict(t=50, b=60, l=60, r=60),
+            height=400,
+            margin=dict(t=60, b=60, l=60, r=60),
             xaxis=dict(
                 title="Periode",
                 gridcolor="#2d3748",
-                tickfont=dict(color="#94a3b8"),
+                tickfont=dict(color="#94a3b8", size=12),
             ),
             yaxis=dict(
-                title=dict(text="LM Net Sales (Rp 000)", font=dict(color=bar_color)),
+                title=dict(text="LM Net Sales", font=dict(color=bar_color)),
                 tickfont=dict(color=bar_color),
                 gridcolor="#2d3748",
                 side="left",
@@ -783,7 +780,7 @@ if page == "🏠 Overview":
                 overlaying="y",
                 side="right",
                 showgrid=False,
-                range=[0, max(trend_df["LM Cont%"]) * 1.3],
+                range=[0, max(trend_df["LM Cont%"]) * 1.5],  # Lebih banyak ruang untuk label
             ),
             legend=dict(
                 orientation="h",
@@ -792,6 +789,7 @@ if page == "🏠 Overview":
                 xanchor="center",
                 x=0.5,
                 font=dict(color="#e2e8f0"),
+                bgcolor="rgba(26,32,53,0.8)",
             ),
             barmode="overlay",
         )
@@ -890,7 +888,7 @@ elif page == "🏪 By Store":
         fig.update_layout(**{**PD, "barmode":"stack",
             "height":max(420, len(filtered)*28),
             "margin":dict(t=20,b=20,l=10,r=20),
-            "xaxis_title":"Net Sales (Rp 000)"})
+            "xaxis_title":"Net Sales"})
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
@@ -1014,19 +1012,6 @@ elif page == "🏪 By Store":
         
         st.plotly_chart(fig_sku_combined, use_container_width=True)
 
-        # Insight box
-        avg_sell_through_store = sku_store["SKU Cont%"].mean()
-        total_oos_store = sku_store["OOS"].sum()
-        total_sold_store = sku_store["SKU Sale"].sum()
-        total_sku_store = sku_store["SKU Total"].sum()
-        
-        if avg_sell_through_store >= 80:
-            st.markdown(insight(f"Rata-rata Sell-Through per Store: {avg_sell_through_store:.1f}% — Performa sangat baik! Total {int(total_sold_store):,} dari {int(total_sku_store):,} SKU terjual.", "success"), unsafe_allow_html=True)
-        elif avg_sell_through_store >= 60:
-            st.markdown(insight(f"Rata-rata Sell-Through per Store: {avg_sell_through_store:.1f}% — Performa cukup baik. OOS: {int(total_oos_store):,} SKU perlu diperhatikan.", "info"), unsafe_allow_html=True)
-        else:
-            st.markdown(insight(f"Rata-rata Sell-Through per Store: {avg_sell_through_store:.1f}% — Perlu peningkatan. {int(total_oos_store):,} SKU OOS mempengaruhi penjualan.", "warning"), unsafe_allow_html=True)
-
         st.markdown('<div class="section-title">Posisi Store: SKU Sell-Through vs OOS (ukuran = Total NS)</div>', unsafe_allow_html=True)
         fig_sc2 = px.scatter(filtered, x="OOS", y="SKU Cont%",
             text="Store Name", size="Total NS", color="LM Cont%",
@@ -1065,7 +1050,7 @@ elif page == "🏪 By Store":
             barmode="stack",
             height=max(420, len(filtered)*22),
             margin=dict(t=30, b=20, l=10, r=10),
-            xaxis_title="Net Sales LM (Rp 000)",
+            xaxis_title="Net Sales LM",
             xaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
             yaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
             legend=dict(bgcolor="rgba(26,32,53,0.8)", bordercolor="#2d3748", borderwidth=1, font=dict(color="#e2e8f0")),
@@ -1083,7 +1068,7 @@ elif page == "🏪 By Store":
     fig3.add_hline(y=filtered["LM Cont%"].mean(), line_dash="dot", line_color="#718096")
     fig3.add_vline(x=filtered["Total NS"].mean(), line_dash="dot", line_color="#718096")
     fig3.update_layout(**{**PD, "height":400,
-        "xaxis_title":"Total Net Sales (Rp 000)", "yaxis_title":"LM Contribution (%)",
+        "xaxis_title":"Total Net Sales", "yaxis_title":"LM Contribution (%)",
         "coloraxis_showscale":False})
     st.plotly_chart(fig3, use_container_width=True)
 
@@ -1168,7 +1153,7 @@ elif page == "📦 By Category":
                           annotation_text=f"Avg {lm_pct:.1f}%",
                           annotation_font=dict(color="#718096"))
         fig_bub.update_layout(**{**PD, "height":420,
-            "xaxis_title":"Total Net Sales (Rp 000)", "yaxis_title":"LM Contribution (%)",
+            "xaxis_title":"Total Net Sales", "yaxis_title":"LM Contribution (%)",
             "legend":dict(orientation="h", y=-0.2, font=dict(color="#e2e8f0"))})
         st.plotly_chart(fig_bub, use_container_width=True)
 
@@ -1182,7 +1167,7 @@ elif page == "📦 By Category":
             textposition="outside", textfont=dict(color="#e2e8f0")))
         fig_h.update_layout(**{**PD, "height":420,
             "margin":dict(t=20,b=20,l=10,r=70),
-            "xaxis_title":"LM Net Sales (Rp 000)"})
+            "xaxis_title":"LM Net Sales"})
         st.plotly_chart(fig_h, use_container_width=True)
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -1194,7 +1179,7 @@ elif page == "📦 By Category":
         st.markdown("### 📦 SKU Performance per Kategori")
 
         # Combined SKU Performance Chart - Stacked horizontal bar like the Breakdown LM Sales chart
-        st.markdown('<div class="section-title">SKU Performance: Sell-Through% / SKU Terjual / OOS per Kategori</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">SKU Terjual / OOS / Belum Terjual per Kategori</div>', unsafe_allow_html=True)
         
         sku_cat = cat_filtered[cat_filtered["SKU Total"] > 0].copy()
         sku_cat = sku_cat.sort_values("SKU Total", ascending=True)
@@ -1287,17 +1272,6 @@ elif page == "📦 By Category":
         
         st.plotly_chart(fig_sku_combined, use_container_width=True)
 
-        # Additional insight box
-        avg_sell_through = sku_cat["SKU Cont%"].mean()
-        total_oos = sku_cat["OOS"].sum()
-        total_sold = sku_cat["SKU Sale"].sum()
-        st.markdown(insight(
-            f"Rata-rata Sell-Through: <b>{avg_sell_through:.1f}%</b> | "
-            f"Total SKU Terjual: <b>{int(total_sold):,}</b> | "
-            f"Total OOS: <b>{int(total_oos):,}</b>",
-            "info"
-        ), unsafe_allow_html=True)
-
         st.markdown('<div class="section-title">SKU Total vs Terjual per Kategori (ukuran = OOS, warna = Sell-Through%)</div>', unsafe_allow_html=True)
         sku_sc_df = cat_filtered[cat_filtered["SKU Total"] > 0].copy()
         fig_sku_sc = px.scatter(sku_sc_df, x="SKU Total", y="SKU Sale",
@@ -1326,7 +1300,7 @@ elif page == "📦 By Category":
     fig_grp.add_trace(go.Bar(name="Normal", x=grp_sum["Group"], y=grp_sum["Normal NS"],
         marker_color="#2d3a5a"))
     fig_grp.update_layout(**{**PD, "barmode":"group", "height":340,
-        "yaxis_title":"Net Sales (Rp 000)"})
+        "yaxis_title":"Net Sales"})
     st.plotly_chart(fig_grp, use_container_width=True)
 
     # ── Data Table ──
