@@ -572,7 +572,7 @@
         // ========================================
         // CONFIGURATION - GANTI URL INI!
         // ========================================
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyMf6D_lcIFX_NnRKNKGy63hwRFtLg0Wia43Tbgs2AFephSzTgl3TONOVBUMfSbNoWM4Q/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyYJ2gas1y5EvLZYhOkKJF1S8_4h3kUXl0T0AUBuMS9WstulOhPxhvPjuxG4H0nRWXQOA/exec';
         
         // ========================================
         // STATE
