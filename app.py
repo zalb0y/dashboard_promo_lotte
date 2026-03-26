@@ -273,15 +273,15 @@ PD = dict(
 # DFF=FRESH FOOD, DMS=Meal Solution, DDF=DRY FOOD 123, ELC+NF1+NF2=NON FOOD INT, OTH=Other
 DIVISION_MAP = {
     "FRESH FOOD":    "FRESH FOOD",
-    "MEAL SOLUTION": "Meal Solution",
-    "DRY FOOD":      "DRY FOOD 123",
-    "H&B HOME CARE": "DRY FOOD 123",   # DF3 masuk DDF
-    "ELECTRONIC":    "NON FOOD INT",
-    "NON FOOD":      "NON FOOD INT",
+    "MEAL SOLUTION": "MEAL SOLUTION",
+    "DRY FOOD":      "DRY FOOD",
+    "H&B HOME CARE": "DRY FOOD",  
+    "ELECTRONIC":    "NON FOOD",
+    "NON FOOD":      "NON FOOD",
     "OTHER":         "Other",
 }
 
-DIVISION_ORDER = ["FRESH FOOD", "Meal Solution", "DRY FOOD 123", "NON FOOD INT", "Other"]
+DIVISION_ORDER = ["FRESH FOOD", "MEAL SOLUTION", "DRY FOOD", "NON FOOD", "Other"]
 
 # Division color palette
 DIVISION_COLORS = {
