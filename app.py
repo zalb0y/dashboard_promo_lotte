@@ -286,9 +286,9 @@ DIVISION_ORDER = ["FRESH FOOD", "MEAL SOLUTION", "DRY FOOD", "NON FOOD", "Other"
 # Division color palette
 DIVISION_COLORS = {
     "FRESH FOOD":    "#00f5d4",
-    "Meal Solution": "#fee440",
-    "DRY FOOD 123":  "#00d4ff",
-    "NON FOOD INT":  "#9b5de5",
+    "MEAL SOLUTION": "#fee440",
+    "DRY FOOD":  "#00d4ff",
+    "NON FOOD":  "#9b5de5",
     "Other":         "#718096",
 }
 
