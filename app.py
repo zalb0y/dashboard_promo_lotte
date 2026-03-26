@@ -390,7 +390,6 @@ def load_lmi(lm_num=1):
     cat_detail["Group"] = cat_detail["Cat ID"].apply(
         lambda x: id_to_group.get(int(x), "OTHER") if str(x).isdigit() else "OTHER"
     )
-    cat_detail["Division"] = cat_detail["Group"].map(DIVISION_MAP).fillna("Other")
     return store_data, st_total, cat_detail, period_label
 
 
@@ -481,8 +480,6 @@ def load_lsi(lm_num):
     }
     cat_detail = cat_detail.copy()
     cat_detail["Group"] = cat_detail["Cat ID"].apply(lambda x: group_id_map.get(str(x).strip(), "OTHER"))
-    cat_detail["Division"] = cat_detail["Group"].map(DIVISION_MAP).fillna("Other")
-
     return store, store_total, cat_detail, period_label
 
 
@@ -545,6 +542,8 @@ with st.sidebar:
         selected_period = st.selectbox("📅 Pilih Periode", list(lsi_options.keys()))
         lm_num = lsi_options[selected_period]
         store_df, store_total, cat_df, period_label = load_lsi(lm_num)
+        cat_df = cat_df.copy()
+        cat_df["Division"] = cat_df["Group"].map(DIVISION_MAP).fillna("Other")
         portal_label = "LSI"
     else:
         lmi_options = {
@@ -556,6 +555,8 @@ with st.sidebar:
         selected_lmi = st.selectbox("📅 Pilih Periode", list(lmi_options.keys()))
         lm_num_lmi = lmi_options[selected_lmi]
         store_df, store_total, cat_df, period_label = load_lmi(lm_num_lmi)
+        cat_df = cat_df.copy()
+        cat_df["Division"] = cat_df["Group"].map(DIVISION_MAP).fillna("Other")
         portal_label = "LMI"
 
     st.markdown("---")
@@ -661,7 +662,7 @@ if page == "🏠 Overview":
     available_divisions = [d for d in DIVISION_ORDER if d in cat_df["Division"].unique()]
 
     selected_divisions = st.multiselect(
-        "Pilih Division (mempengaruhi chart kategori di bawah):",
+        "Pilih Division :",
         options=available_divisions,
         default=available_divisions,
         key="overview_division_filter",
