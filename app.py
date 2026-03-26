@@ -661,7 +661,7 @@ if page == "🏠 Overview":
     available_divisions = [d for d in DIVISION_ORDER if d in cat_df["Division"].unique()]
 
     selected_divisions = st.multiselect(
-        "Pilih Division (mempengaruhi chart kategori di bawah):",
+        "Pilih Division :",
         options=available_divisions,
         default=available_divisions,
         key="overview_division_filter",
