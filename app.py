@@ -270,12 +270,12 @@ PD = dict(
 
 # ─── DIVISION MAPPING ────────────────────────────────────────────────────────
 # Mapping group name → division label (sesuai struktur LSI Summary by Cat)
-# DFF=FRESH FOOD, DMS=Meal Solution, DDF=DRY FOOD 123, ELC+NF1+NF2=NON FOOD INT, OTH=Other
+# DFF=FRESH FOOD, DMS=MEAL SOLUTION, DDF=DRY FOOD, ELC+NF1+NF2=NON FOOD, OTH=Other
 DIVISION_MAP = {
     "FRESH FOOD":    "FRESH FOOD",
     "MEAL SOLUTION": "MEAL SOLUTION",
     "DRY FOOD":      "DRY FOOD",
-    "H&B HOME CARE": "DRY FOOD",  
+    "H&B HOME CARE": "DRY FOOD",
     "ELECTRONIC":    "NON FOOD",
     "NON FOOD":      "NON FOOD",
     "OTHER":         "Other",
@@ -287,8 +287,8 @@ DIVISION_ORDER = ["FRESH FOOD", "MEAL SOLUTION", "DRY FOOD", "NON FOOD", "Other"
 DIVISION_COLORS = {
     "FRESH FOOD":    "#00f5d4",
     "MEAL SOLUTION": "#fee440",
-    "DRY FOOD":  "#00d4ff",
-    "NON FOOD":  "#9b5de5",
+    "DRY FOOD":      "#00d4ff",
+    "NON FOOD":      "#9b5de5",
     "Other":         "#718096",
 }
 
@@ -689,11 +689,11 @@ if page == "🏠 Overview":
         for i, (_, row) in enumerate(div_summary.iterrows()):
             div_name = row["Division"]
             color_map = {
-                "FRESH FOOD": "teal",
-                "Meal Solution": "orange",
-                "DRY FOOD 123": "blue",
-                "NON FOOD INT": "purple",
-                "Other": "red",
+                "FRESH FOOD":    "teal",
+                "MEAL SOLUTION": "orange",
+                "DRY FOOD":      "blue",
+                "NON FOOD":      "purple",
+                "Other":         "red",
             }
             with cols_div[i]:
                 st.markdown(
