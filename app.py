@@ -278,7 +278,8 @@ LMI_PERIODS = {
 LSI_PERIODS = {
     1: "30 Des-12 Jan", 2: "13-26 Jan",
     3: "27 Jan-9 Feb",  4: "10-23 Feb",
-    5: "24 Feb-9 Mar",  6: "10-23 Mar",
+    5: "24 Feb-9 Mar",  6: "10-23 Mar", 
+    7: "24 Mar-6 Apr",
 }
 
 # ─── DATA LOADERS ────────────────────────────────────────────────────────────
@@ -493,6 +494,7 @@ with st.sidebar:
             "LM4 · 10 Feb – 23 Feb 2026":       4,
             "LM5 · 24 Feb – 9 Mar 2026":        5,
             "LM6 · 10 Mar – 23 Mar 2026":       6,
+            "LM7 . 24 Mar - 6 Apr 2026":        7,
         }
         sel          = st.selectbox("📅 Pilih Periode", list(lsi_options.keys()))
         lm_num       = lsi_options[sel]
