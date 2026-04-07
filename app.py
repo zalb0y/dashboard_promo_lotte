@@ -453,28 +453,31 @@ def load_lsi(lm_num):
 @st.cache_data
 def load_all_lmi_trend():
     rows = []
-    for n in range(1, 7):
+    n = 1
+    while True:
         try:
             _, st_tot, _, _ = load_lmi(n)
             rows.append({"Mailer": f"LM{n}", "Period": LMI_PERIODS.get(n, ""),
                          "Total NS": st_tot["Total NS"], "Normal NS": st_tot["Normal NS"],
                          "LM NS": st_tot["LM NS"],       "LM Cont%": st_tot["LM Cont%"]})
+            n += 1
         except Exception:
-            pass
+            break
     return pd.DataFrame(rows)
-
 
 @st.cache_data
 def load_all_lsi_trend():
     rows = []
-    for n in range(1, 7):
+    n = 1
+    while True:
         try:
             _, st_tot, _, _ = load_lsi(n)
             rows.append({"Mailer": f"LM{n}", "Period": LSI_PERIODS.get(n, ""),
                          "Total NS": st_tot["Total NS"], "Normal NS": st_tot["Normal NS"],
                          "LM NS": st_tot["LM NS"],       "LM Cont%": st_tot["LM Cont%"]})
+            n += 1
         except Exception:
-            pass
+            break  # ← stop otomatis saat file LM berikutnya tidak ada
     return pd.DataFrame(rows)
 
 
