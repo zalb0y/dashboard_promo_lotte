@@ -653,6 +653,7 @@ if page == "🏠 Overview":
         if portal_label == "LMI":
             trader_ns  = store_df["Trader NS"].sum()
             regular_ns = store_df["Regular NS"].sum()
+            lm_ns      = trader_ns + regular_ns
         else:
             lm_trader = store_df["LM Trader NS"].sum()
             lm_prof   = store_df["LM Prof NS"].sum()
@@ -669,6 +670,7 @@ if page == "🏠 Overview":
         if portal_label == "LMI":
             trader_ns  = cat_div_filtered["Trader NS"].sum()
             regular_ns = cat_div_filtered["Regular NS"].sum()
+            lm_ns      = trader_ns + regular_ns
         else:
             lm_trader = cat_div_filtered["LM Trader NS"].sum()
             lm_prof   = cat_div_filtered["LM Prof NS"].sum()
