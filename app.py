@@ -643,22 +643,21 @@ if page == "🏠 Overview":
     all_divs_selected = set(selected_divisions) == set(available_divisions)
 
     if all_divs_selected or not selected_divisions:
-        total_ns      = store_total["Total NS"]
-        lm_ns         = store_total["LM NS"]
-        normal_ns     = store_total["Normal NS"]
-        lm_cont       = store_total["LM Cont%"]
-        sku_total_val = store_total["SKU Total"]
-        sku_sale_val  = store_total["SKU Sale"]
-        sku_cont_val  = store_total["SKU Cont%"]
-        oos_val_total = store_total["OOS"]
-        if portal_label == "LMI":
-            trader_ns  = store_df["Trader NS"].sum()
-            regular_ns = store_df["Regular NS"].sum()
-            lm_ns      = trader_ns + regular_ns
-        else:
-            lm_trader = store_df["LM Trader NS"].sum()
-            lm_prof   = store_df["LM Prof NS"].sum()
-            lm_others = store_df["LM Others NS"].sum()
+    total_ns      = store_total["Total NS"]
+    lm_ns         = store_total["LM NS"]           # ← tidak di-overwrite lagi
+    normal_ns     = store_total["Normal NS"]
+    lm_cont       = store_total["LM Cont%"]
+    sku_total_val = store_total["SKU Total"]
+    sku_sale_val  = store_total["SKU Sale"]
+    sku_cont_val  = store_total["SKU Cont%"]
+    oos_val_total = store_total["OOS"]
+    if portal_label == "LMI":
+        trader_ns  = store_df["Trader NS"].sum()   # hanya untuk breakdown chart
+        regular_ns = store_df["Regular NS"].sum()  # hanya untuk breakdown chart
+    else:
+        lm_trader = store_df["LM Trader NS"].sum()
+        lm_prof   = store_df["LM Prof NS"].sum()
+        lm_others = store_df["LM Others NS"].sum()
     else:
         total_ns      = cat_div_filtered["Total NS"].sum()
         lm_ns         = cat_div_filtered["LM NS"].sum()
