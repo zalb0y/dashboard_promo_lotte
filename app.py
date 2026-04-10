@@ -273,7 +273,7 @@ GROUP_ID_MAP_LSI = {
 LMI_PERIODS = {
     1: "1-14 Jan",      2: "15-28 Jan",
     3: "29 Jan-18 Feb", 4: "19 Feb-4 Mar",
-    5: "5-25 Mar",
+    5: "5-25 Mar",      6: "26 Mar-8 Apr",
 }
 LSI_PERIODS = {
     1: "30 Des-12 Jan", 2: "13-26 Jan",
@@ -512,9 +512,10 @@ with st.sidebar:
         lmi_options = {
             "LM1 · 1 – 14 Jan 2026":          1,
             "LM2 · 15 – 28 Jan 2026":         2,
-            "LM3 · 29 Jan – 18 Feb 2026":   3,
-            "LM4 · 19 Feb – 4 Mar 2026":    4,
+            "LM3 · 29 Jan – 18 Feb 2026":     3,
+            "LM4 · 19 Feb – 4 Mar 2026":      4,
             "LM5 · 5 – 25 Mar 2026":          5,
+            "LM5 · 26 Mar – 8 Apr 2026":      6,
         }
         sel          = st.selectbox("📅 Pilih Periode", list(lmi_options.keys()))
         lm_num       = lmi_options[sel]
