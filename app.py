@@ -742,11 +742,12 @@ if page == "🏠 Overview":
         ))
     else:
         st.markdown('<div class="section-title">Breakdown Net Sales LM: Regular vs Trader</div>', unsafe_allow_html=True)
+        lm_total_breakdown = regular_ns + trader_ns
         fig_lm = go.Figure(go.Bar(
             x=["Regular (End User)","Trader"],
             y=[regular_ns, trader_ns],
             marker_color=["#00f5d4","#fee440"],
-            text=[f"{v/lm_ns*100:.1f}%" if lm_ns else "0%" for v in [regular_ns, trader_ns]],
+            text=[f"{v/lm_total_breakdown*100:.1f}%" if lm_total_breakdown else "0%" for v in [regular_ns, trader_ns]],
             textposition="outside", textfont=dict(color="#e2e8f0"),
         ))
     fig_lm.update_layout(**{**PD, "height":300,
