@@ -450,6 +450,53 @@ def load_lsi(lm_num):
     return store, store_total, cat_detail, period_label
 
 
+# ─── STORE REGION MAPPING (LSI) ───────────────────────────────────────────────
+# 36 active stores mapped to their regions
+STORE_REGION_MAP = {
+    # Regional 1 (13 stores)
+    "Alam Sutera": "Regional 1",
+    "Batam": "Regional 1",
+    "Ciputat": "Regional 1",
+    "Jambi": "Regional 1",
+    "Jatake": "Regional 1",
+    "Kelapa Gading": "Regional 1",
+    "Lampung": "Regional 1",
+    "Medan": "Regional 1",
+    "Palembang": "Regional 1",
+    "Pasar Rebo": "Regional 1",
+    "Pekanbaru": "Regional 1",
+    "Serang": "Regional 1",
+    "Serpong": "Regional 1",
+    # Regional 2 (13 stores)
+    "Bandung": "Regional 2",
+    "Bekasi": "Regional 2",
+    "Bogor": "Regional 2",
+    "Cibitung": "Regional 2",
+    "Cikarang": "Regional 2",
+    "Cilengsi": "Regional 2",
+    "Cimahi": "Regional 2",
+    "Cirebon": "Regional 2",
+    "Karawang": "Regional 2",
+    "Meruya": "Regional 2",
+    "Pakansari": "Regional 2",
+    "Tasikmalaya": "Regional 2",
+    "Tegal": "Regional 2",
+    # Regional 3 (13 stores)
+    "Balikpapan": "Regional 3",
+    "Banjarmasin": "Regional 3",
+    "Denpasar": "Regional 3",
+    "Makassar": "Regional 3",
+    "Malang": "Regional 3",
+    "Manado": "Regional 3",
+    "Mastrip SBY": "Regional 3",
+    "Mataram": "Regional 3",
+    "Samarinda": "Regional 3",
+    "Semarang": "Regional 3",
+    "Sidoarjo": "Regional 3",
+    "Solo": "Regional 3",
+    "Yogyakarta": "Regional 3",
+}
+
 @st.cache_data
 def load_all_lmi_trend():
     rows = []
@@ -515,7 +562,7 @@ with st.sidebar:
             "LM3 · 29 Jan – 18 Feb 2026":     3,
             "LM4 · 19 Feb – 4 Mar 2026":      4,
             "LM5 · 5 – 25 Mar 2026":          5,
-            "LM5 · 26 Mar – 8 Apr 2026":      6,
+            "LM6 · 26 Mar – 8 Apr 2026":      6,
         }
         sel          = st.selectbox("📅 Pilih Periode", list(lmi_options.keys()))
         lm_num       = lmi_options[sel]
@@ -611,33 +658,12 @@ if page == "🏠 Overview":
     st.markdown('<div class="section-title">🏷️ Filter Division</div>', unsafe_allow_html=True)
     available_divisions = [d for d in DIVISION_ORDER if d in cat_df["Division"].unique()]
     selected_divisions  = st.multiselect(
-        "Pilih Division :", options=available_divisions, default=available_divisions,
+        "Pilih Division :", options=available_divisions, default=[],
         key="overview_division_filter",
         help="Filter berdasarkan division",
+        placeholder="Choose Option",
     )
     cat_div_filtered = cat_df[cat_df["Division"].isin(selected_divisions)] if selected_divisions else cat_df
-
-    # Division summary metric cards
-    if selected_divisions:
-        div_summary = cat_div_filtered.groupby("Division").agg(
-            Total_NS=("Total NS","sum"), LM_NS=("LM NS","sum"),
-        ).reset_index()
-        div_summary["LM_Cont%"] = div_summary["LM_NS"] / div_summary["Total_NS"] * 100
-        div_summary["_order"]   = div_summary["Division"].apply(
-            lambda x: DIVISION_ORDER.index(x) if x in DIVISION_ORDER else 99
-        )
-        div_summary = div_summary.sort_values("_order").drop(columns="_order")
-
-        cols_div = st.columns(len(div_summary))
-        for i, (_, row) in enumerate(div_summary.iterrows()):
-            with cols_div[i]:
-                st.markdown(
-                    metric_card(row["Division"], fmt_rp(row["LM_NS"]*1000),
-                                DIVISION_CARD_COLOR.get(row["Division"], "blue"),
-                                f"LM Cont: {row['LM_Cont%']:.1f}%"),
-                    unsafe_allow_html=True,
-                )
-        st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Compute scorecard values ──────────────────────────────────────────────
     all_divs_selected = set(selected_divisions) == set(available_divisions)
@@ -754,77 +780,54 @@ if page == "🏠 Overview":
         "margin":dict(t=30,b=10,l=10,r=10), "yaxis_title":"Net Sales LM"})
     st.plotly_chart(fig_lm, use_container_width=True)
 
-    # ── Kontribusi LM per Grup Kategori ──────────────────────────────────────
-    st.markdown('<div class="section-title">Kontribusi LM per Grup Kategori</div>', unsafe_allow_html=True)
-    grp_src  = cat_div_filtered if selected_divisions else cat_df
-    grp_data = grp_src.groupby("Group").agg(
-        Total_NS=("Total NS","sum"), LM_NS=("LM NS","sum")
-    ).reset_index()
-    grp_data["LM_Cont"]  = grp_data["LM_NS"] / grp_data["Total_NS"] * 100
-    grp_data             = grp_data.sort_values("LM_Cont", ascending=False)
-    grp_data["Division"] = grp_data["Group"].map(DIVISION_MAP).fillna("Other")
-    bar_colors_grp       = [DIVISION_COLORS.get(d,"#00d4ff") for d in grp_data["Division"]]
-
-    fig3 = go.Figure(go.Bar(
-        x=grp_data["Group"], y=grp_data["LM_Cont"],
-        marker_color=bar_colors_grp,
-        text=[f"{v:.1f}%" for v in grp_data["LM_Cont"]],
-        textposition="outside", textfont=dict(color="#e2e8f0"),
-        customdata=grp_data["Division"],
-        hovertemplate="<b>%{x}</b><br>LM Cont: %{y:.2f}%<br>Division: %{customdata}<extra></extra>",
-    ))
-    fig3.add_hline(y=lm_cont, line_dash="dash", line_color="#fee440",
-                   annotation_text=f"Avg: {lm_cont:.2f}%",
-                   annotation_font=dict(color="#fee440"),
-                   annotation_position="top right")
-    fig3.update_layout(**{**PD, "height":340,
-        "margin":dict(t=30,b=20,l=10,r=10),
-        "yaxis_title":"LM Contribution (%)",
-        "yaxis_range":[0, grp_data["LM_Cont"].max()*1.2] if not grp_data.empty else [0,100]})
-    st.plotly_chart(fig3, use_container_width=True)
-
     # ── LM Net Sales per Division ─────────────────────────────────────────────
-    if selected_divisions and len(selected_divisions) > 0:
-        st.markdown('<div class="section-title">LM Net Sales per Division</div>', unsafe_allow_html=True)
-        div_bar = cat_div_filtered.groupby("Division").agg(
-            Total_NS=("Total NS","sum"), LM_NS=("LM NS","sum"),
-        ).reset_index()
-        div_bar["LM_Cont%"] = div_bar["LM_NS"] / div_bar["Total_NS"] * 100
-        div_bar["_order"]   = div_bar["Division"].apply(
-            lambda x: DIVISION_ORDER.index(x) if x in DIVISION_ORDER else 99
-        )
-        div_bar    = div_bar.sort_values("_order")
-        div_colors = [DIVISION_COLORS.get(d,"#718096") for d in div_bar["Division"]]
+    st.markdown('<div class="section-title">LM Net Sales per Division</div>', unsafe_allow_html=True)
+    # Use filtered data if divisions are selected, otherwise use all data
+    div_data_src = cat_div_filtered if selected_divisions else cat_df
+    div_bar = div_data_src.groupby("Division").agg(
+        Total_NS=("Total NS","sum"), LM_NS=("LM NS","sum"),
+    ).reset_index()
+    div_bar["LM_Cont%"] = div_bar["LM_NS"] / div_bar["Total_NS"] * 100
+    # Sort by LM_NS descending (largest to smallest)
+    div_bar = div_bar.sort_values("LM_NS", ascending=False)
+    div_colors = [DIVISION_COLORS.get(d,"#718096") for d in div_bar["Division"]]
 
-        fig_div = go.Figure()
-        fig_div.add_trace(go.Bar(
-            x=div_bar["Division"], y=div_bar["LM_NS"], name="LM Net Sales",
-            marker_color=div_colors,
-            text=[f"{v:,.0f}" for v in div_bar["LM_NS"]],
-            textposition="outside", textfont=dict(color="#e2e8f0"), yaxis="y",
-        ))
-        fig_div.add_trace(go.Scatter(
-            x=div_bar["Division"], y=div_bar["LM_Cont%"], name="LM Cont%",
-            mode="lines+markers+text",
-            line=dict(color="#fee440", width=2.5), marker=dict(size=10, color="#fee440"),
-            text=[f"{v:.1f}%" for v in div_bar["LM_Cont%"]],
-            textposition="top center", textfont=dict(color="#fee440", size=11), yaxis="y2",
-        ))
-        fig_div.update_layout(
-            plot_bgcolor="#1a2035", paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
-            hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
-            height=320, margin=dict(t=50, b=20, l=60, r=60),
-            xaxis=dict(gridcolor="#2d3748", tickfont=dict(color="#94a3b8")),
-            yaxis=dict(title=dict(text="LM Net Sales", font=dict(color="#00d4ff")),
-                       tickfont=dict(color="#00d4ff"), gridcolor="#2d3748"),
-            yaxis2=dict(title=dict(text="LM Cont%", font=dict(color="#fee440")),
-                        tickfont=dict(color="#fee440"), overlaying="y", side="right", showgrid=False,
-                        range=[0, div_bar["LM_Cont%"].max()*1.5] if not div_bar.empty else [0,100]),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
-                        font=dict(color="#e2e8f0"), bgcolor="rgba(26,32,53,0.8)"),
-        )
-        st.plotly_chart(fig_div, use_container_width=True)
+    fig_div = go.Figure()
+    fig_div.add_trace(go.Bar(
+        x=div_bar["Division"], y=div_bar["LM_NS"], name="LM Net Sales",
+        marker_color=div_colors, opacity=0.85,
+        text=[f"{v:,.0f}" for v in div_bar["LM_NS"]],
+        textposition="outside", textfont=dict(color="#e2e8f0", size=11, weight="bold"), yaxis="y",
+    ))
+    fig_div.add_trace(go.Scatter(
+        x=div_bar["Division"], y=div_bar["LM_Cont%"], name="LM Cont. %",
+        mode="lines+markers+text",
+        line=dict(color="#fee440", width=3),
+        marker=dict(size=12, color="#fee440", line=dict(width=2, color="#1a1a2e")),
+        text=[f"{v:.1f}%" for v in div_bar["LM_Cont%"]],
+        textposition="bottom center", textfont=dict(color="#ffffff", size=12, family="Poppins"), yaxis="y2",
+    ))
+    fig_div.update_layout(
+        plot_bgcolor="#1a2035", paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
+        hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
+        height=350, margin=dict(t=60, b=40, l=60, r=60),
+        xaxis=dict(title="Division", gridcolor="#2d3748", tickfont=dict(color="#94a3b8", size=12)),
+        yaxis=dict(
+            title=dict(text="LM Net Sales", font=dict(color=bar_accent)),
+            tickfont=dict(color=bar_accent), gridcolor="#2d3748", side="left",
+        ),
+        yaxis2=dict(
+            title=dict(text="LM Cont. %", font=dict(color="#fee440")),
+            tickfont=dict(color="#fee440"),
+            overlaying="y", side="right", showgrid=False,
+            range=[0, max(div_bar["LM_Cont%"]) * 1.5] if not div_bar.empty else [0, 100],
+        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
+                    font=dict(color="#e2e8f0"), bgcolor="rgba(26,32,53,0.8)"),
+        barmode="overlay",
+    )
+    st.plotly_chart(fig_div, use_container_width=True)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -837,12 +840,36 @@ elif page == "🏪 By Store":
 
     filtered = store_df[store_df["LM Cont%"] >= lm_thresh].copy()
 
+    # ── Load region data for LSI ──────────────────────────────────────────────
+    if portal_label == "LSI":
+        # Apply region mapping directly from STORE_REGION_MAP
+        filtered["Region"] = filtered["Store Name"].map(STORE_REGION_MAP)
+        # Filter out stores without region (DCHD, LSI Export, Total All, etc.)
+        filtered = filtered[filtered["Region"].notna()].copy()
+        
+        # ── Region filter (affects ALL visualizations) ────────────────────────
+        st.markdown("### 📊 Peringkat Toko per Regional")
+        available_regions = [r for r in ["Regional 1", "Regional 2", "Regional 3"] 
+                            if r in filtered["Region"].unique()]
+        
+        selected_region = st.selectbox(
+            "🏢 Pilih Regional:",
+            options=["Semua Regional"] + available_regions,
+            key="region_filter"
+        )
+        
+        # Apply region filter to ALL data
+        if selected_region != "Semua Regional":
+            filtered = filtered[filtered["Region"] == selected_region].copy()
+
     # ── Scorecards 6 kolom ───────────────────────────────────────────────────
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     with c1:
         st.markdown(metric_card("Total Store Aktif", str(len(filtered))), unsafe_allow_html=True)
     with c2:
-        st.markdown(metric_card("Avg LM Contribution", f"{filtered['LM Cont%'].mean():.2f}%", "green"), unsafe_allow_html=True)
+        total_lm_ns = filtered["LM NS"].sum()
+        avg_lm_cont = filtered["LM Cont%"].mean()
+        st.markdown(metric_card("Net Sales LM", fmt_rp(total_lm_ns*1000), "green", f"Avg Cont: {avg_lm_cont:.2f}%"), unsafe_allow_html=True)
     with c3:
         top = filtered.loc[filtered["Total NS"].idxmax(), "Store Name"] if len(filtered) else "–"
         st.markdown(metric_card("Highest Revenue Store", str(top), "orange"), unsafe_allow_html=True)
@@ -856,138 +883,257 @@ elif page == "🏪 By Store":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Stacked bar NS per Store ──────────────────────────────────────────────
-    col1, col2 = st.columns([3, 2])
-    with col1:
-        st.markdown('<div class="section-title">Total Net Sales per Store (LM vs Normal)</div>', unsafe_allow_html=True)
-        sorted_store = filtered.sort_values("Total NS", ascending=True)
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            y=sorted_store["Store Name"], x=sorted_store["Normal NS"],
-            name="Normal", orientation="h", marker_color="#2d3a5a",
-            text=[f"{v:,.0f}" for v in sorted_store["Normal NS"]],
-            textposition="inside", textfont=dict(color="#94a3b8"),
-        ))
-        fig.add_trace(go.Bar(
-            y=sorted_store["Store Name"], x=sorted_store["LM NS"],
-            name="LM (Promo)", orientation="h", marker_color=bar_accent,
-            text=[f"{v:,.0f}" for v in sorted_store["LM NS"]],
-            textposition="inside", textfont=dict(color="#ffffff"),
-        ))
-        fig.update_layout(**{**PD, "barmode":"stack",
-            "height":max(420, len(filtered)*28),
-            "margin":dict(t=20,b=20,l=10,r=20), "xaxis_title":"Net Sales"})
-        st.plotly_chart(fig, use_container_width=True)
+    # ══════════════════════════════════════════════════════════════════════════
+    # SECTION: Net Sales & LM Contribution per Store (Synchronized View)
+    # Sorting: by LM Cont% (highest first)
+    # ══════════════════════════════════════════════════════════════════════════
+    
+    if portal_label == "LSI":
+        # Create synchronized side-by-side charts
+        col1, col2 = st.columns(2)
+        
+        # Sort by LM Cont% descending (highest contribution first)
+        # For horizontal bar chart, we reverse so highest appears at top
+        sorted_store = filtered.sort_values("LM Cont%", ascending=True)
+        
+        # Create display name with region prefix
+        if selected_region == "Semua Regional":
+            sorted_store["Display Name"] = sorted_store.apply(
+                lambda r: f"[{r['Region'][-1]}] {r['Store Name']}", axis=1
+            )
+        else:
+            sorted_store["Display Name"] = sorted_store["Store Name"]
+        
+        with col1:
+            st.markdown('<div class="section-title">Total Net Sales per Store (LM vs Normal)</div>', unsafe_allow_html=True)
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                y=sorted_store["Display Name"], x=sorted_store["Normal NS"],
+                name="Normal", orientation="h", marker_color="#2d3a5a",
+                text=[f"{v:,.0f}" for v in sorted_store["Normal NS"]],
+                textposition="inside", textfont=dict(color="#94a3b8"),
+            ))
+            fig.add_trace(go.Bar(
+                y=sorted_store["Display Name"], x=sorted_store["LM NS"],
+                name="LM (Promo)", orientation="h", marker_color=bar_accent,
+                text=[f"{v:,.0f}" for v in sorted_store["LM NS"]],
+                textposition="inside", textfont=dict(color="#ffffff"),
+            ))
+            fig.update_layout(**{**PD, "barmode":"stack",
+                "height":max(420, len(filtered)*28),
+                "margin":dict(t=20,b=20,l=10,r=20), "xaxis_title":"Net Sales"})
+            st.plotly_chart(fig, use_container_width=True, key="ns_chart_lsi")
 
-    with col2:
-        st.markdown('<div class="section-title">LM Contribution % per Store</div>', unsafe_allow_html=True)
-        sorted_lm  = filtered.sort_values("LM Cont%", ascending=True)
-        thresh_low = 5 if portal_label == "LSI" else 10
-        thresh_mid = 10 if portal_label == "LSI" else 20
-        colors     = ["#ff6b6b" if v < thresh_low else "#fee440" if v < thresh_mid else "#00f5d4"
+        with col2:
+            st.markdown('<div class="section-title">LM Contribution % per Store</div>', unsafe_allow_html=True)
+            
+            # Use same sort order as left chart for synchronization
+            sorted_lm = sorted_store.copy()
+            thresh_low = 5
+            thresh_mid = 10
+            colors = ["#ff6b6b" if v < thresh_low else "#fee440" if v < thresh_mid else "#00f5d4"
                       for v in sorted_lm["LM Cont%"]]
-        fig2 = go.Figure(go.Bar(
-            y=sorted_lm["Store Name"], x=sorted_lm["LM Cont%"],
-            orientation="h", marker_color=colors,
-            text=[f"{v:.1f}%" for v in sorted_lm["LM Cont%"]],
-            textposition="outside", textfont=dict(color="#e2e8f0"),
-        ))
-        fig2.add_vline(x=filtered["LM Cont%"].mean(), line_dash="dash", line_color="#718096",
-                       annotation_text="Avg", annotation_font=dict(color="#718096"),
-                       annotation_position="top")
-        fig2.update_layout(**{**PD, "height":max(420, len(filtered)*28),
-            "margin":dict(t=20,b=20,l=10,r=40), "xaxis_title":"LM Contribution (%)"})
-        st.plotly_chart(fig2, use_container_width=True)
+            fig2 = go.Figure(go.Bar(
+                y=sorted_lm["Display Name"], x=sorted_lm["LM Cont%"],
+                orientation="h", marker_color=colors,
+                text=[f"{v:.1f}%" for v in sorted_lm["LM Cont%"]],
+                textposition="outside", textfont=dict(color="#e2e8f0"),
+            ))
+            fig2.add_vline(x=filtered["LM Cont%"].mean(), line_dash="dash", line_color="#718096",
+                           annotation_text="Avg", annotation_font=dict(color="#718096"),
+                           annotation_position="top")
+            fig2.update_layout(**{**PD, "height":max(420, len(filtered)*28),
+                "margin":dict(t=20,b=20,l=10,r=40), "xaxis_title":"LM Contribution (%)"})
+            st.plotly_chart(fig2, use_container_width=True, key="lm_chart_lsi")
+    
+    else:
+        # ── LMI: Standard visualization (no region) ───────────────────────────
+        # Sort by LM Cont% descending (highest contribution first)
+        sorted_store = filtered.sort_values("LM Cont%", ascending=True)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown('<div class="section-title">Total Net Sales per Store (LM vs Normal)</div>', unsafe_allow_html=True)
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                y=sorted_store["Store Name"], x=sorted_store["Normal NS"],
+                name="Normal", orientation="h", marker_color="#2d3a5a",
+                text=[f"{v:,.0f}" for v in sorted_store["Normal NS"]],
+                textposition="inside", textfont=dict(color="#94a3b8"),
+            ))
+            fig.add_trace(go.Bar(
+                y=sorted_store["Store Name"], x=sorted_store["LM NS"],
+                name="LM (Promo)", orientation="h", marker_color=bar_accent,
+                text=[f"{v:,.0f}" for v in sorted_store["LM NS"]],
+                textposition="inside", textfont=dict(color="#ffffff"),
+            ))
+            fig.update_layout(**{**PD, "barmode":"stack",
+                "height":max(420, len(filtered)*28),
+                "margin":dict(t=20,b=20,l=10,r=20), "xaxis_title":"Net Sales"})
+            st.plotly_chart(fig, use_container_width=True, key="ns_chart_lmi")
 
-    # ── SKU Performance per Store ─────────────────────────────────────────────
+        with col2:
+            st.markdown('<div class="section-title">LM Contribution % per Store</div>', unsafe_allow_html=True)
+            # Use same order as left chart
+            sorted_lm = sorted_store.copy()
+            thresh_low = 10
+            thresh_mid = 20
+            colors = ["#ff6b6b" if v < thresh_low else "#fee440" if v < thresh_mid else "#00f5d4"
+                      for v in sorted_lm["LM Cont%"]]
+            fig2 = go.Figure(go.Bar(
+                y=sorted_lm["Store Name"], x=sorted_lm["LM Cont%"],
+                orientation="h", marker_color=colors,
+                text=[f"{v:.1f}%" for v in sorted_lm["LM Cont%"]],
+                textposition="outside", textfont=dict(color="#e2e8f0"),
+            ))
+            fig2.add_vline(x=filtered["LM Cont%"].mean(), line_dash="dash", line_color="#718096",
+                           annotation_text="Avg", annotation_font=dict(color="#718096"),
+                           annotation_position="top")
+            fig2.update_layout(**{**PD, "height":max(420, len(filtered)*28),
+                "margin":dict(t=20,b=20,l=10,r=40), "xaxis_title":"LM Contribution (%)"})
+            st.plotly_chart(fig2, use_container_width=True, key="lm_chart_lmi")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # SECTION: SKU Performance per Store (Enhanced Labels)
+    # Sorting: by LM Cont% (highest first) - same as other charts
+    # ══════════════════════════════════════════════════════════════════════════
     st.markdown("---")
     st.markdown("### 📦 SKU Performance per Store")
     st.markdown('<div class="section-title">SKU Terjual / OOS / Belum Terjual per Store</div>', unsafe_allow_html=True)
 
     sku_store = filtered[filtered["SKU Total"] > 0].copy()
     sku_store["SKU Unsold"] = (sku_store["SKU Total"] - sku_store["SKU Sale"] - sku_store["OOS"]).clip(lower=0)
-    sku_store = sku_store.sort_values("SKU Total", ascending=True)
+    
+    # Calculate percentages for labels
+    sku_store["Sale_Pct"] = (sku_store["SKU Sale"] / sku_store["SKU Total"] * 100).round(1)
+    sku_store["OOS_Pct"] = (sku_store["OOS"] / sku_store["SKU Total"] * 100).round(1)
+    sku_store["Unsold_Pct"] = (sku_store["SKU Unsold"] / sku_store["SKU Total"] * 100).round(1)
+    
+    # Sort by LM Cont% (ascending for bottom-up display, highest at top)
+    sku_store = sku_store.sort_values("LM Cont%", ascending=True)
+    
+    if portal_label == "LSI":
+        if selected_region == "Semua Regional":
+            sku_store["Display Name"] = sku_store.apply(
+                lambda r: f"[{r['Region'][-1]}] {r['Store Name']}", axis=1
+            )
+        else:
+            sku_store["Display Name"] = sku_store["Store Name"]
+    else:
+        sku_store["Display Name"] = sku_store["Store Name"]
 
     fig_sku_s = go.Figure()
+    
+    # SKU Terjual with Qty + Percentage
     fig_sku_s.add_trace(go.Bar(
-        y=sku_store["Store Name"], x=sku_store["SKU Sale"], name="SKU Terjual",
+        y=sku_store["Display Name"], x=sku_store["SKU Sale"], name="SKU Terjual",
         orientation="h", marker_color="#00f5d4",
-        text=[f"{int(v)}" for v in sku_store["SKU Sale"]],
-        textposition="inside", textfont=dict(color="#1a1a2e", size=10),
+        text=[f"{int(v)} ({p:.1f}%)" for v, p in zip(sku_store["SKU Sale"], sku_store["Sale_Pct"])],
+        textposition="inside", textfont=dict(color="#1a1a2e", size=9, weight="bold"),
         hovertemplate="<b>%{y}</b><br>SKU Terjual: %{x:,.0f}<extra></extra>",
     ))
+    
+    # OOS with Qty + Percentage
     fig_sku_s.add_trace(go.Bar(
-        y=sku_store["Store Name"], x=sku_store["OOS"], name="OOS",
+        y=sku_store["Display Name"], x=sku_store["OOS"], name="OOS",
         orientation="h", marker_color="#ff6b6b",
-        text=[f"{int(v)}" if v > 0 else "" for v in sku_store["OOS"]],
-        textposition="inside", textfont=dict(color="#ffffff", size=10),
+        text=[f"{int(v)} ({p:.1f}%)" if v > 0 else "" for v, p in zip(sku_store["OOS"], sku_store["OOS_Pct"])],
+        textposition="inside", textfont=dict(color="#1a1a2e", size=9, weight="bold"),
         hovertemplate="<b>%{y}</b><br>OOS: %{x:,.0f}<extra></extra>",
     ))
+    
+    # Belum Terjual with Qty + Percentage
     fig_sku_s.add_trace(go.Bar(
-        y=sku_store["Store Name"], x=sku_store["SKU Unsold"], name="Belum Terjual",
+        y=sku_store["Display Name"], x=sku_store["SKU Unsold"], name="Belum Terjual",
         orientation="h", marker_color="#9b5de5",
-        text=[f"{int(v)}" if v > 5 else "" for v in sku_store["SKU Unsold"]],
-        textposition="inside", textfont=dict(color="#ffffff", size=10),
+        text=[f"{int(v)} ({p:.1f}%)" if v > 3 else "" for v, p in zip(sku_store["SKU Unsold"], sku_store["Unsold_Pct"])],
+        textposition="inside", textfont=dict(color="#1a1a2e", size=9, weight="bold"),
         hovertemplate="<b>%{y}</b><br>Belum Terjual: %{x:,.0f}<extra></extra>",
     ))
-    for _, row in sku_store.iterrows():
-        fig_sku_s.add_annotation(
-            x=row["SKU Total"] + (sku_store["SKU Total"].max() * 0.02),
-            y=row["Store Name"],
-            text=f"{row['SKU Cont%']:.1f}%",
-            showarrow=False, font=dict(color="#00f5d4", size=10), xanchor="left",
-        )
+    
     fig_sku_s.update_layout(
         plot_bgcolor="#1a2035", paper_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
         hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
         barmode="stack", height=max(500, len(sku_store)*26),
-        margin=dict(t=30, b=20, l=10, r=80), xaxis_title="Jumlah SKU",
+        margin=dict(t=30, b=20, l=10, r=20), xaxis_title="Jumlah SKU",
         xaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8"),
-                   range=[0, sku_store["SKU Total"].max() * 1.15]),
+                   range=[0, sku_store["SKU Total"].max() * 1.05]),
         yaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
                     font=dict(color="#e2e8f0")),
     )
     st.plotly_chart(fig_sku_s, use_container_width=True)
 
-    st.markdown('<div class="section-title">Posisi Store: SKU Sell-Through vs OOS (ukuran = Total NS)</div>', unsafe_allow_html=True)
-    sc_color2 = "Purples" if portal_label == "LSI" else "Blues"
-    fig_sc2 = px.scatter(filtered, x="OOS", y="SKU Cont%",
-        text="Store Name", size="Total NS", color="LM Cont%",
-        color_continuous_scale=sc_color2,
-        hover_data={"SKU Total":True,"SKU Sale":True,"LM NS":":,.0f"})
-    fig_sc2.update_traces(textposition="top center", textfont_size=9)
-    fig_sc2.update_layout(
-        plot_bgcolor="#1a2035", paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
-        hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
-        height=420, margin=dict(t=30, b=20, l=10, r=10),
-        xaxis_title="Jumlah OOS", yaxis_title="SKU Sell-Through (%)",
-        xaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
-        yaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
-        coloraxis_showscale=False,
-    )
-    st.plotly_chart(fig_sc2, use_container_width=True)
-
-    # ── LM Breakdown per Store ────────────────────────────────────────────────
-    sorted_br = filtered.sort_values("LM NS", ascending=True)
+    # ══════════════════════════════════════════════════════════════════════════
+    # SECTION: LM Breakdown per Store (With Inside Percentage Labels)
+    # Sorting: by LM Cont% (highest first) - same as other charts
+    # ══════════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    
+    # Sort by LM Cont% (ascending for bottom-up display, highest at top)
+    sorted_br = filtered.sort_values("LM Cont%", ascending=True).copy()
+    
+    if portal_label == "LSI":
+        if selected_region == "Semua Regional":
+            sorted_br["Display Name"] = sorted_br.apply(
+                lambda r: f"[{r['Region'][-1]}] {r['Store Name']}", axis=1
+            )
+        else:
+            sorted_br["Display Name"] = sorted_br["Store Name"]
+    else:
+        sorted_br["Display Name"] = sorted_br["Store Name"]
+    
     if portal_label == "LSI":
         st.markdown('<div class="section-title">Breakdown LM Sales: Trader / Prof / Others per Store</div>', unsafe_allow_html=True)
+        
+        # Calculate percentages for each segment
+        sorted_br["Trader_Pct"] = (sorted_br["LM Trader NS"] / sorted_br["LM NS"] * 100).fillna(0).round(1)
+        sorted_br["Prof_Pct"] = (sorted_br["LM Prof NS"] / sorted_br["LM NS"] * 100).fillna(0).round(1)
+        sorted_br["Others_Pct"] = (sorted_br["LM Others NS"] / sorted_br["LM NS"] * 100).fillna(0).round(1)
+        
         fig_br = go.Figure()
-        fig_br.add_trace(go.Bar(y=sorted_br["Store Name"], x=sorted_br["LM Trader NS"],
-            name="Trader", orientation="h", marker_color="#fee440"))
-        fig_br.add_trace(go.Bar(y=sorted_br["Store Name"], x=sorted_br["LM Prof NS"],
-            name="Professional", orientation="h", marker_color="#00d4ff"))
-        fig_br.add_trace(go.Bar(y=sorted_br["Store Name"], x=sorted_br["LM Others NS"],
-            name="Others", orientation="h", marker_color="#9b5de5"))
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["LM Trader NS"],
+            name="Trader", orientation="h", marker_color="#fee440",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["LM Trader NS"], sorted_br["Trader_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["LM Prof NS"],
+            name="Professional", orientation="h", marker_color="#00d4ff",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["LM Prof NS"], sorted_br["Prof_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["LM Others NS"],
+            name="Others", orientation="h", marker_color="#9b5de5",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["LM Others NS"], sorted_br["Others_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
     else:
         st.markdown('<div class="section-title">Breakdown LM Sales: Regular vs Trader per Store</div>', unsafe_allow_html=True)
+        
+        # Calculate percentages for each segment
+        lm_total = sorted_br["Regular NS"] + sorted_br["Trader NS"]
+        sorted_br["Regular_Pct"] = (sorted_br["Regular NS"] / lm_total * 100).fillna(0).round(1)
+        sorted_br["Trader_Pct"] = (sorted_br["Trader NS"] / lm_total * 100).fillna(0).round(1)
+        
         fig_br = go.Figure()
-        fig_br.add_trace(go.Bar(y=sorted_br["Store Name"], x=sorted_br["Regular NS"],
-            name="Regular (End User)", orientation="h", marker_color="#00f5d4"))
-        fig_br.add_trace(go.Bar(y=sorted_br["Store Name"], x=sorted_br["Trader NS"],
-            name="Trader", orientation="h", marker_color="#fee440"))
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["Regular NS"],
+            name="Regular (End User)", orientation="h", marker_color="#00f5d4",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["Regular NS"], sorted_br["Regular_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["Trader NS"],
+            name="Trader", orientation="h", marker_color="#fee440",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["Trader NS"], sorted_br["Trader_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
+    
     fig_br.update_layout(
         plot_bgcolor="#1a2035", paper_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
@@ -1001,25 +1147,18 @@ elif page == "🏪 By Store":
     )
     st.plotly_chart(fig_br, use_container_width=True)
 
-    # ── Scatter Total NS vs LM% ───────────────────────────────────────────────
-    st.markdown('<div class="section-title">Posisi Store: Total NS vs LM Contribution%</div>', unsafe_allow_html=True)
-    sc_color = "Purples" if portal_label == "LSI" else "Blues"
-    fig3 = px.scatter(filtered, x="Total NS", y="LM Cont%",
-        text="Store Name", size="Total NS", color="LM Cont%",
-        color_continuous_scale=sc_color,
-        hover_data={"LM NS":":,.0f","Normal NS":":,.0f","Total NS":":,.0f"})
-    fig3.update_traces(textposition="top center", textfont_size=10)
-    fig3.add_hline(y=filtered["LM Cont%"].mean(), line_dash="dot", line_color="#718096")
-    fig3.add_vline(x=filtered["Total NS"].mean(), line_dash="dot", line_color="#718096")
-    fig3.update_layout(**{**PD, "height":400,
-        "xaxis_title":"Total Net Sales", "yaxis_title":"LM Contribution (%)",
-        "coloraxis_showscale":False})
-    st.plotly_chart(fig3, use_container_width=True)
-
-    # ── Data Table ────────────────────────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════════════════
+    # SECTION: Data Table
+    # Sorting: by LM Cont% (highest first) - same as other charts
+    # ══════════════════════════════════════════════════════════════════════════
+    st.markdown("---")
     st.markdown('<div class="section-title">📋 Detail Data per Store</div>', unsafe_allow_html=True)
+    
+    # Sort by LM Cont% descending (highest first)
+    table_df = filtered.sort_values("LM Cont%", ascending=False).copy()
+    
     if portal_label == "LSI":
-        disp = ["Store Name","Total NS","Normal NS","LM NS","LM Cont%",
+        disp = ["Region", "Store Name","Total NS","Normal NS","LM NS","LM Cont%",
                 "LM Trader NS","LM Prof NS","LM Others NS",
                 "SKU Total","SKU Sale","SKU Cont%","OOS"]
         fmt  = {"Total NS":"{:,.1f}","Normal NS":"{:,.1f}","LM NS":"{:,.1f}",
@@ -1035,7 +1174,8 @@ elif page == "🏪 By Store":
                 "Trader NS":"{:,.1f}","Trader Cont%":"{:.2f}%",
                 "SKU Total":"{:,.0f}","SKU Sale":"{:,.0f}",
                 "SKU Cont%":"{:.2f}%","OOS":"{:,.0f}"}
-    st.dataframe(filtered[disp].style.format(fmt), use_container_width=True)
+    
+    st.dataframe(table_df[disp].style.format(fmt), use_container_width=True)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1046,11 +1186,30 @@ elif page == "📦 By Category":
     st.markdown(f'<span class="portal-badge {badge_cls}">{portal_label}</span>', unsafe_allow_html=True)
     st.markdown(f"## 📦 Analisis Net Sales per Kategori — {period_label}")
 
-    cat_filtered     = cat_df[cat_df["LM Cont%"] >= lm_thresh].copy()
-    groups_available = sorted(cat_filtered["Group"].unique().tolist())
-    selected_groups  = st.multiselect("Filter Grup Kategori:", groups_available, default=groups_available)
-    cat_filtered     = cat_filtered[cat_filtered["Group"].isin(selected_groups)]
+    cat_filtered = cat_df[cat_df["LM Cont%"] >= lm_thresh].copy()
 
+    # ── Division filter (affects ALL visualizations) ─────────────────────────
+    st.markdown("### 📊 Peringkat Kategori per Division")
+    
+    # Get available divisions based on portal
+    if portal_label == "LSI":
+        division_order_list = ["FRESH FOOD", "MEAL SOLUTION", "DRY FOOD", "NON FOOD", "Other"]
+    else:
+        division_order_list = ["FRESH FOOD", "MEAL SOLUTION", "DRY FOOD", "H&B HOME CARE", "ELECTRONIC", "NON FOOD", "Other"]
+    
+    available_divisions = [d for d in division_order_list if d in cat_filtered["Division"].unique()]
+    
+    selected_division = st.selectbox(
+        "🏷️ Pilih Division:",
+        options=["Semua Division"] + available_divisions,
+        key="division_filter_cat"
+    )
+    
+    # Apply division filter to ALL data
+    if selected_division != "Semua Division":
+        cat_filtered = cat_filtered[cat_filtered["Division"] == selected_division].copy()
+
+    # ── Calculate metrics ────────────────────────────────────────────────────
     total_cat_ns  = cat_filtered["Total NS"].sum()
     total_lm_ns   = cat_filtered["LM NS"].sum()
     lm_pct        = total_lm_ns / total_cat_ns * 100 if total_cat_ns else 0
@@ -1058,153 +1217,271 @@ elif page == "📦 By Category":
     sale_sku_cat  = cat_filtered["SKU Sale"].sum()
     pct_sku_cat   = sale_sku_cat / total_sku_cat * 100 if total_sku_cat else 0
 
-    # ── Scorecards 5 kolom ───────────────────────────────────────────────────
-    c1, c2, c3, c4, c5 = st.columns(5)
+    # ── Scorecards 6 kolom ───────────────────────────────────────────────────
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     with c1:
-        st.markdown(metric_card("Total Kategori", str(len(cat_filtered))), unsafe_allow_html=True)
+        st.markdown(metric_card("Total Kategori Aktif", str(len(cat_filtered))), unsafe_allow_html=True)
     with c2:
-        st.markdown(metric_card("Total Net Sales", fmt_rp(total_cat_ns*1000), "blue"), unsafe_allow_html=True)
+        avg_lm_cont = cat_filtered["LM Cont%"].mean() if len(cat_filtered) else 0
+        st.markdown(metric_card("Net Sales LM", fmt_rp(total_lm_ns*1000), "green", f"Avg Cont: {avg_lm_cont:.2f}%"), unsafe_allow_html=True)
     with c3:
-        st.markdown(metric_card("LM Net Sales", fmt_rp(total_lm_ns*1000), "green", f"{lm_pct:.2f}%"), unsafe_allow_html=True)
+        top = cat_filtered.loc[cat_filtered["Total NS"].idxmax(), "Category"] if len(cat_filtered) else "–"
+        st.markdown(metric_card("Highest Revenue Category", str(top), "orange"), unsafe_allow_html=True)
     with c4:
-        st.markdown(metric_card("SKU Sell-Through", f"{pct_sku_cat:.1f}%", "teal",
-                                f"{int(sale_sku_cat):,} / {int(total_sku_cat):,} SKU"), unsafe_allow_html=True)
+        top_lm = cat_filtered.loc[cat_filtered["LM Cont%"].idxmax(), "Category"] if len(cat_filtered) else "–"
+        st.markdown(metric_card("Highest LM Cont% Category", str(top_lm), "purple"), unsafe_allow_html=True)
     with c5:
-        st.markdown(metric_card("Total OOS", f"{int(cat_filtered['OOS'].sum()):,} SKU", "red"), unsafe_allow_html=True)
+        st.markdown(metric_card("Avg SKU Sell-Through", f"{pct_sku_cat:.1f}%", "teal"), unsafe_allow_html=True)
+    with c6:
+        st.markdown(metric_card("Total OOS SKU", f"{int(cat_filtered['OOS'].sum()):,}", "red"), unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Treemap ───────────────────────────────────────────────────────────────
-    st.markdown('<div class="section-title">Treemap: Net Sales per Kategori</div>', unsafe_allow_html=True)
-    treemap_df = cat_filtered[cat_filtered["Total NS"] > 0].copy()
-    cs         = "Purples" if portal_label == "LSI" else "Blues"
-    fig_tree   = px.treemap(treemap_df, path=["Group","Category"], values="Total NS",
-        color="LM Cont%", color_continuous_scale=cs,
-        hover_data={"LM NS":":,.0f","LM Cont%":":.2f"})
-    fig_tree.update_layout(**{**PD, "height":420, "margin":dict(t=20,b=10,l=10,r=10)})
-    fig_tree.update_coloraxes(colorbar_title="LM Cont%")
-    st.plotly_chart(fig_tree, use_container_width=True)
-
-    col1, col2 = st.columns([3, 2])
+    # ══════════════════════════════════════════════════════════════════════════
+    # SECTION: Net Sales & LM Contribution per Category (Synchronized View)
+    # Sorting: by LM Cont% (highest first)
+    # ══════════════════════════════════════════════════════════════════════════
+    
+    # Create synchronized side-by-side charts
+    col1, col2 = st.columns(2)
+    
+    # Sort by LM Cont% descending (highest contribution first)
+    # For horizontal bar chart, we reverse so highest appears at top
+    sorted_cat = cat_filtered.sort_values("LM Cont%", ascending=True)
+    
+    # Create display name with division prefix
+    if selected_division == "Semua Division":
+        # Create abbreviation for division
+        div_abbrev = {
+            "FRESH FOOD": "FF",
+            "MEAL SOLUTION": "MS",
+            "DRY FOOD": "DF",
+            "H&B HOME CARE": "HB",
+            "ELECTRONIC": "EL",
+            "NON FOOD": "NF",
+            "Other": "OT",
+        }
+        sorted_cat["Display Name"] = sorted_cat.apply(
+            lambda r: f"[{div_abbrev.get(r['Division'], 'OT')}] {r['Category']}", axis=1
+        )
+    else:
+        sorted_cat["Display Name"] = sorted_cat["Category"]
+    
     with col1:
-        st.markdown('<div class="section-title">LM Contribution% vs Total NS per Kategori</div>', unsafe_allow_html=True)
-        fig_bub = px.scatter(cat_filtered[cat_filtered["Total NS"] > 1],
-            x="Total NS", y="LM Cont%", size="Total NS", color="Group",
-            text="Category", hover_data={"LM NS":":,.0f","Normal NS":":,.0f"})
-        fig_bub.update_traces(textposition="top center", textfont_size=9)
-        fig_bub.add_hline(y=lm_pct, line_dash="dot", line_color="#718096",
-                          annotation_text=f"Avg {lm_pct:.1f}%",
-                          annotation_font=dict(color="#718096"))
-        fig_bub.update_layout(**{**PD, "height":420,
-            "xaxis_title":"Total Net Sales", "yaxis_title":"LM Contribution (%)",
-            "legend":dict(orientation="h", y=-0.2, font=dict(color="#e2e8f0"))})
-        st.plotly_chart(fig_bub, use_container_width=True)
+        st.markdown('<div class="section-title">Total Net Sales per Category (LM vs Normal)</div>', unsafe_allow_html=True)
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            y=sorted_cat["Display Name"], x=sorted_cat["Normal NS"],
+            name="Normal", orientation="h", marker_color="#2d3a5a",
+            text=[f"{v:,.0f}" for v in sorted_cat["Normal NS"]],
+            textposition="inside", textfont=dict(color="#94a3b8"),
+        ))
+        fig.add_trace(go.Bar(
+            y=sorted_cat["Display Name"], x=sorted_cat["LM NS"],
+            name="LM (Promo)", orientation="h", marker_color=bar_accent,
+            text=[f"{v:,.0f}" for v in sorted_cat["LM NS"]],
+            textposition="inside", textfont=dict(color="#ffffff"),
+        ))
+        fig.update_layout(**{**PD, "barmode":"stack",
+            "height":max(420, len(cat_filtered)*28),
+            "margin":dict(t=20,b=20,l=10,r=20), "xaxis_title":"Net Sales"})
+        st.plotly_chart(fig, use_container_width=True, key="ns_chart_cat")
 
     with col2:
-        st.markdown('<div class="section-title">Top 10 Kategori by LM NS</div>', unsafe_allow_html=True)
-        top10 = cat_filtered.nlargest(10,"LM NS").sort_values("LM NS")
-        fig_h = go.Figure(go.Bar(
-            y=top10["Category"], x=top10["LM NS"],
-            orientation="h", marker_color=bar_accent,
-            text=[f"{v:,.0f}" for v in top10["LM NS"]],
+        st.markdown('<div class="section-title">LM Contribution % per Category</div>', unsafe_allow_html=True)
+        
+        # Use same sort order as left chart for synchronization
+        sorted_lm = sorted_cat.copy()
+        if portal_label == "LSI":
+            thresh_low = 5
+            thresh_mid = 10
+        else:
+            thresh_low = 10
+            thresh_mid = 20
+        colors = ["#ff6b6b" if v < thresh_low else "#fee440" if v < thresh_mid else "#00f5d4"
+                  for v in sorted_lm["LM Cont%"]]
+        fig2 = go.Figure(go.Bar(
+            y=sorted_lm["Display Name"], x=sorted_lm["LM Cont%"],
+            orientation="h", marker_color=colors,
+            text=[f"{v:.1f}%" for v in sorted_lm["LM Cont%"]],
             textposition="outside", textfont=dict(color="#e2e8f0"),
         ))
-        fig_h.update_layout(**{**PD, "height":420,
-            "margin":dict(t=20,b=20,l=10,r=70), "xaxis_title":"LM Net Sales"})
-        st.plotly_chart(fig_h, use_container_width=True)
+        fig2.add_vline(x=cat_filtered["LM Cont%"].mean(), line_dash="dash", line_color="#718096",
+                       annotation_text="Avg", annotation_font=dict(color="#718096"),
+                       annotation_position="top")
+        fig2.update_layout(**{**PD, "height":max(420, len(cat_filtered)*28),
+            "margin":dict(t=20,b=20,l=10,r=40), "xaxis_title":"LM Contribution (%)"})
+        st.plotly_chart(fig2, use_container_width=True, key="lm_chart_cat")
 
-    # ── SKU Performance per Kategori ──────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════════════════
+    # SECTION: SKU Performance per Category (Enhanced Labels)
+    # Sorting: by LM Cont% (highest first) - same as other charts
+    # ══════════════════════════════════════════════════════════════════════════
     st.markdown("---")
-    st.markdown("### 📦 SKU Performance per Kategori")
-    st.markdown('<div class="section-title">SKU Terjual / OOS / Belum Terjual per Kategori</div>', unsafe_allow_html=True)
+    st.markdown("### 📦 SKU Performance per Category")
+    st.markdown('<div class="section-title">SKU Terjual / OOS / Belum Terjual per Category</div>', unsafe_allow_html=True)
 
     sku_cat = cat_filtered[cat_filtered["SKU Total"] > 0].copy()
-    sku_cat = sku_cat.sort_values("SKU Total", ascending=True)
     sku_cat["SKU Unsold"] = (sku_cat["SKU Total"] - sku_cat["SKU Sale"] - sku_cat["OOS"]).clip(lower=0)
+    
+    # Calculate percentages for labels
+    sku_cat["Sale_Pct"] = (sku_cat["SKU Sale"] / sku_cat["SKU Total"] * 100).round(1)
+    sku_cat["OOS_Pct"] = (sku_cat["OOS"] / sku_cat["SKU Total"] * 100).round(1)
+    sku_cat["Unsold_Pct"] = (sku_cat["SKU Unsold"] / sku_cat["SKU Total"] * 100).round(1)
+    
+    # Sort by LM Cont% (ascending for bottom-up display, highest at top)
+    sku_cat = sku_cat.sort_values("LM Cont%", ascending=True)
+    
+    # Create display name with division prefix
+    if selected_division == "Semua Division":
+        div_abbrev = {
+            "FRESH FOOD": "FF", "MEAL SOLUTION": "MS", "DRY FOOD": "DF",
+            "H&B HOME CARE": "HB", "ELECTRONIC": "EL", "NON FOOD": "NF", "Other": "OT",
+        }
+        sku_cat["Display Name"] = sku_cat.apply(
+            lambda r: f"[{div_abbrev.get(r['Division'], 'OT')}] {r['Category']}", axis=1
+        )
+    else:
+        sku_cat["Display Name"] = sku_cat["Category"]
 
     fig_sku_c = go.Figure()
+    
+    # SKU Terjual with Qty + Percentage
     fig_sku_c.add_trace(go.Bar(
-        y=sku_cat["Category"], x=sku_cat["SKU Sale"], name="SKU Terjual",
+        y=sku_cat["Display Name"], x=sku_cat["SKU Sale"], name="SKU Terjual",
         orientation="h", marker_color="#00f5d4",
-        text=[f"{int(v)}" for v in sku_cat["SKU Sale"]],
-        textposition="inside", textfont=dict(color="#1a1a2e", size=9),
+        text=[f"{int(v)} ({p:.1f}%)" for v, p in zip(sku_cat["SKU Sale"], sku_cat["Sale_Pct"])],
+        textposition="inside", textfont=dict(color="#1a1a2e", size=9, weight="bold"),
         hovertemplate="<b>%{y}</b><br>SKU Terjual: %{x:,.0f}<extra></extra>",
     ))
+    
+    # OOS with Qty + Percentage
     fig_sku_c.add_trace(go.Bar(
-        y=sku_cat["Category"], x=sku_cat["OOS"], name="OOS",
+        y=sku_cat["Display Name"], x=sku_cat["OOS"], name="OOS",
         orientation="h", marker_color="#ff6b6b",
-        text=[f"{int(v)}" for v in sku_cat["OOS"]],
-        textposition="inside", textfont=dict(color="#ffffff", size=9),
+        text=[f"{int(v)} ({p:.1f}%)" if v > 0 else "" for v, p in zip(sku_cat["OOS"], sku_cat["OOS_Pct"])],
+        textposition="inside", textfont=dict(color="#1a1a2e", size=9, weight="bold"),
         hovertemplate="<b>%{y}</b><br>OOS: %{x:,.0f}<extra></extra>",
     ))
+    
+    # Belum Terjual with Qty + Percentage
     fig_sku_c.add_trace(go.Bar(
-        y=sku_cat["Category"], x=sku_cat["SKU Unsold"], name="Belum Terjual",
+        y=sku_cat["Display Name"], x=sku_cat["SKU Unsold"], name="Belum Terjual",
         orientation="h", marker_color="#9b5de5",
-        text=[f"{int(v)}" if v > 0 else "" for v in sku_cat["SKU Unsold"]],
-        textposition="inside", textfont=dict(color="#ffffff", size=9),
+        text=[f"{int(v)} ({p:.1f}%)" if v > 3 else "" for v, p in zip(sku_cat["SKU Unsold"], sku_cat["Unsold_Pct"])],
+        textposition="inside", textfont=dict(color="#1a1a2e", size=9, weight="bold"),
         hovertemplate="<b>%{y}</b><br>Belum Terjual: %{x:,.0f}<extra></extra>",
     ))
-    for _, row in sku_cat.iterrows():
-        fig_sku_c.add_annotation(
-            x=row["SKU Total"] + (sku_cat["SKU Total"].max() * 0.02),
-            y=row["Category"],
-            text=f"{row['SKU Cont%']:.1f}%",
-            showarrow=False, font=dict(color="#00f5d4", size=10), xanchor="left",
-        )
+    
     fig_sku_c.update_layout(
         plot_bgcolor="#1a2035", paper_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
         hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
         barmode="stack", height=max(500, len(sku_cat)*26),
-        margin=dict(t=30, b=20, l=10, r=80), xaxis_title="Jumlah SKU",
+        margin=dict(t=30, b=20, l=10, r=20), xaxis_title="Jumlah SKU",
         xaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8"),
-                   range=[0, sku_cat["SKU Total"].max() * 1.15]),
+                   range=[0, sku_cat["SKU Total"].max() * 1.05] if len(sku_cat) else [0, 100]),
         yaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
                     font=dict(color="#e2e8f0")),
     )
     st.plotly_chart(fig_sku_c, use_container_width=True)
 
-    st.markdown('<div class="section-title">SKU Total vs Terjual per Kategori (ukuran = OOS, warna = Sell-Through%)</div>', unsafe_allow_html=True)
-    sku_sc_df  = cat_filtered[cat_filtered["SKU Total"] > 0].copy()
-    fig_sku_sc = px.scatter(sku_sc_df, x="SKU Total", y="SKU Sale",
-        size="OOS", color="SKU Cont%", text="Category",
-        color_continuous_scale="RdYlGn",
-        hover_data={"OOS":True,"LM Cont%":":.2f"})
-    fig_sku_sc.update_traces(textposition="top center", textfont_size=9)
-    max_val = sku_sc_df["SKU Total"].max()
-    fig_sku_sc.add_trace(go.Scatter(
-        x=[0, max_val], y=[0, max_val], mode="lines",
-        line=dict(dash="dot", color="#718096"),
-        name="100% Sell-Through", showlegend=True,
-    ))
-    fig_sku_sc.update_layout(**{**PD, "height":420,
-        "xaxis_title":"SKU Total", "yaxis_title":"SKU Terjual",
-        "coloraxis_colorbar_title":"Sell-Through%"})
-    st.plotly_chart(fig_sku_sc, use_container_width=True)
-
-    # ── LM vs Normal per Grup Kategori ───────────────────────────────────────
-    st.markdown('<div class="section-title">LM vs Normal per Grup Kategori</div>', unsafe_allow_html=True)
-    grp_sum = cat_filtered.groupby("Group")[["LM NS","Normal NS","Total NS"]].sum().reset_index()
-    grp_sum = grp_sum.sort_values("Total NS", ascending=False)
-    fig_grp = go.Figure()
-    fig_grp.add_trace(go.Bar(
-        name="LM (Promo)", x=grp_sum["Group"], y=grp_sum["LM NS"],
-        marker_color=bar_accent,
-        text=[f"{v/t*100:.1f}%" for v,t in zip(grp_sum["LM NS"],grp_sum["Total NS"])],
-        textposition="outside", textfont=dict(color="#e2e8f0"),
-    ))
-    fig_grp.add_trace(go.Bar(
-        name="Normal", x=grp_sum["Group"], y=grp_sum["Normal NS"],
-        marker_color="#2d3a5a",
-    ))
-    fig_grp.update_layout(**{**PD, "barmode":"group", "height":340, "yaxis_title":"Net Sales"})
-    st.plotly_chart(fig_grp, use_container_width=True)
-
-    # ── Data Table ────────────────────────────────────────────────────────────
-    st.markdown('<div class="section-title">📋 Detail Data per Kategori</div>', unsafe_allow_html=True)
+    # ══════════════════════════════════════════════════════════════════════════
+    # SECTION: LM Breakdown per Category (With Inside Percentage Labels)
+    # Sorting: by LM Cont% (highest first) - same as other charts
+    # ══════════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    
+    # Sort by LM Cont% (ascending for bottom-up display, highest at top)
+    sorted_br = cat_filtered.sort_values("LM Cont%", ascending=True).copy()
+    
+    # Create display name with division prefix
+    if selected_division == "Semua Division":
+        div_abbrev = {
+            "FRESH FOOD": "FF", "MEAL SOLUTION": "MS", "DRY FOOD": "DF",
+            "H&B HOME CARE": "HB", "ELECTRONIC": "EL", "NON FOOD": "NF", "Other": "OT",
+        }
+        sorted_br["Display Name"] = sorted_br.apply(
+            lambda r: f"[{div_abbrev.get(r['Division'], 'OT')}] {r['Category']}", axis=1
+        )
+    else:
+        sorted_br["Display Name"] = sorted_br["Category"]
+    
     if portal_label == "LSI":
-        disp = ["Group","Category","Total NS","Normal NS","LM NS","LM Cont%",
+        st.markdown('<div class="section-title">Breakdown LM Sales: Trader / Prof / Others per Category</div>', unsafe_allow_html=True)
+        
+        # Calculate percentages for each segment
+        sorted_br["Trader_Pct"] = (sorted_br["LM Trader NS"] / sorted_br["LM NS"] * 100).fillna(0).round(1)
+        sorted_br["Prof_Pct"] = (sorted_br["LM Prof NS"] / sorted_br["LM NS"] * 100).fillna(0).round(1)
+        sorted_br["Others_Pct"] = (sorted_br["LM Others NS"] / sorted_br["LM NS"] * 100).fillna(0).round(1)
+        
+        fig_br = go.Figure()
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["LM Trader NS"],
+            name="Trader", orientation="h", marker_color="#fee440",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["LM Trader NS"], sorted_br["Trader_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["LM Prof NS"],
+            name="Professional", orientation="h", marker_color="#00d4ff",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["LM Prof NS"], sorted_br["Prof_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["LM Others NS"],
+            name="Others", orientation="h", marker_color="#9b5de5",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["LM Others NS"], sorted_br["Others_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
+    else:
+        st.markdown('<div class="section-title">Breakdown LM Sales: Regular vs Trader per Category</div>', unsafe_allow_html=True)
+        
+        # Calculate percentages for each segment
+        lm_total = sorted_br["Regular NS"] + sorted_br["Trader NS"]
+        sorted_br["Regular_Pct"] = (sorted_br["Regular NS"] / lm_total * 100).fillna(0).round(1)
+        sorted_br["Trader_Pct"] = (sorted_br["Trader NS"] / lm_total * 100).fillna(0).round(1)
+        
+        fig_br = go.Figure()
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["Regular NS"],
+            name="Regular (End User)", orientation="h", marker_color="#00f5d4",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["Regular NS"], sorted_br["Regular_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
+        fig_br.add_trace(go.Bar(
+            y=sorted_br["Display Name"], x=sorted_br["Trader NS"],
+            name="Trader", orientation="h", marker_color="#fee440",
+            text=[f"{p:.1f}%" if v > 0 else "" for v, p in zip(sorted_br["Trader NS"], sorted_br["Trader_Pct"])],
+            textposition="inside", textfont=dict(color="#1a1a2e", size=10, weight="bold"),
+        ))
+    
+    fig_br.update_layout(
+        plot_bgcolor="#1a2035", paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#cbd5e1", family="Poppins, sans-serif"),
+        hoverlabel=dict(bgcolor="#1e2a4a", bordercolor="#00d4ff", font=dict(color="#f1f5f9")),
+        barmode="stack", height=max(420, len(cat_filtered)*22),
+        margin=dict(t=30, b=20, l=10, r=10), xaxis_title="Net Sales LM",
+        xaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
+        yaxis=dict(gridcolor="#2d3748", zerolinecolor="#2d3748", tickfont=dict(color="#94a3b8")),
+        legend=dict(bgcolor="rgba(26,32,53,0.8)", bordercolor="#2d3748", borderwidth=1,
+                    font=dict(color="#e2e8f0")),
+    )
+    st.plotly_chart(fig_br, use_container_width=True)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # SECTION: Data Table
+    # Sorting: by LM Cont% (highest first) - same as other charts
+    # ══════════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    st.markdown('<div class="section-title">📋 Detail Data per Category</div>', unsafe_allow_html=True)
+    
+    # Sort by LM Cont% descending (highest first)
+    table_df = cat_filtered.sort_values("LM Cont%", ascending=False).copy()
+    
+    if portal_label == "LSI":
+        disp = ["Division", "Category","Total NS","Normal NS","LM NS","LM Cont%",
                 "LM Trader NS","LM Prof NS","LM Others NS",
                 "SKU Total","SKU Sale","SKU Cont%","OOS"]
         fmt  = {"Total NS":"{:,.1f}","Normal NS":"{:,.1f}","LM NS":"{:,.1f}",
@@ -1212,7 +1489,7 @@ elif page == "📦 By Category":
                 "LM Others NS":"{:,.1f}","SKU Total":"{:,.0f}","SKU Sale":"{:,.0f}",
                 "SKU Cont%":"{:.2f}%","OOS":"{:,.0f}"}
     else:
-        disp = ["Group","Category","Total NS","LM NS","Normal NS","LM Cont%",
+        disp = ["Division", "Category","Total NS","LM NS","Normal NS","LM Cont%",
                 "Regular NS","Regular Cont%","Trader NS","Trader Cont%",
                 "SKU Total","SKU Sale","SKU Cont%","OOS"]
         fmt  = {"Total NS":"{:,.1f}","LM NS":"{:,.1f}","Normal NS":"{:,.1f}",
@@ -1220,10 +1497,8 @@ elif page == "📦 By Category":
                 "Trader NS":"{:,.1f}","Trader Cont%":"{:.2f}%",
                 "SKU Total":"{:,.0f}","SKU Sale":"{:,.0f}",
                 "SKU Cont%":"{:.2f}%","OOS":"{:,.0f}"}
-    st.dataframe(
-        cat_filtered[disp].sort_values(["Group","LM Cont%"], ascending=[True,False]).style.format(fmt),
-        use_container_width=True,
-    )
+    
+    st.dataframe(table_df[disp].style.format(fmt), use_container_width=True)
 
 # ─── FOOTER ──────────────────────────────────────────────────────────────────
 st.markdown("---")
